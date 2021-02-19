@@ -1,5 +1,8 @@
 FROM ubuntu:20.04
 
+FROM nvidia/cuda:10.2-base
+CMD nvidia-smi
+
 FROM python:3
 
 RUN pip install --no-cache-dir --upgrade pip && \
