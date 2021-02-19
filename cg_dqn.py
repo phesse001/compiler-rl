@@ -10,11 +10,11 @@ import numpy as np
 env = gym.make("llvm-autophase-codesize-v0")
 
 # Use existing dqn to make better decisions
-agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 16,
-            n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56], alpha = 0.003)
+agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
+            n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
-env.require_datasets(['cBench-v0', 'blas-v0'])
+env.require_datasets(['cBench-v0'])
 
 # action space is described by env.action_space
 # the observation space (autophase) is a 56 dimensional vector
@@ -31,8 +31,9 @@ for i in range(1,101):
     while not done:
         action = agent.choose_action(observation)
         new_observation, reward, done, info = env.step(action)
-        total += reward
         #check total to allow for sequence of actions
+        total += reward
+        #might be more useful to only store memory's of transitions where there was an effect(good or bad)
         if info['action_had_no_effect'] == False:
             agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
