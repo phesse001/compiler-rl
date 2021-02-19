@@ -32,6 +32,8 @@ class DQN(nn.Module):
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 		print(torch.device)
 		print(torch.get_num_threads())
+		print(torch.cuda.get_device_name())
+		print(torch.cuda.is_available())
 		self.to(self.device)
 
 	def forward(self, state):

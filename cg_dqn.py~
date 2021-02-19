@@ -33,8 +33,7 @@ for i in range(1,101):
         new_observation, reward, done, info = env.step(action)
         total += reward
         #check total to allow for sequence of actions
-        if info['action_had_no_effect'] == False:
-            agent.store_transition(action, observation, reward, new_observation, done)
+        agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
         observation = new_observation
         print("Step " + str(i) + " Cumulative Total " + str(total) +  " Epsilon " + str(agent.epsilon) + " Action " + str(action))
