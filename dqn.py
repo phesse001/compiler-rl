@@ -31,9 +31,6 @@ class DQN(nn.Module):
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 		print(torch.device)
-		print(torch.get_num_threads())
-		print(torch.cuda.get_device_name())
-		print(torch.cuda.is_available())
 		self.to(self.device)
 
 	def forward(self, state):
@@ -99,7 +96,6 @@ class Agent():
 		# start learning as soon as batch size of memory is filled
 		if self.mem_cntr < self.batch_size * 100:
 			return
-
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
 		# select subset of memorys
