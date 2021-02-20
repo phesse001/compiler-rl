@@ -1,5 +1,4 @@
-FROM nvidia/cuda:9.2-devel-ubuntu18.04
-CMD nvidia-smi
+FROM ubuntu:20.04
 
 FROM python:3
 
