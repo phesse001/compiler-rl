@@ -24,18 +24,26 @@ env.require_datasets(['cBench-v0'])
 for i in range(1,101):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
+    cpuinfo = env.observation["CpuInfo"]
+    #observation = np.append(observation, cpuinfo)
     #observation = observation.astype(np.float32)
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
     while not done:
+        bcf = env.observation['BitcodeFile']
+        print(bcf)
+        # compile and run initial IR
+        # take action
         action = agent.choose_action(observation)
         new_observation, reward, done, info = env.step(action)
-        #check total to allow for sequence of actions
+        # compile and run transformed IR
+        # calculate reward as ln(T(s1)/T(s1+1))
+        # check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
-        if info['action_had_no_effect'] == False:
-            agent.store_transition(action, observation, reward, new_observation, done)
+        #if info['action_had_no_effect'] == False:
+        agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
         observation = new_observation
         print("Step " + str(i) + " Cumulative Total " + str(total) +  " Epsilon " + str(agent.epsilon) + " Action " + str(action))
