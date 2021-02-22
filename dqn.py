@@ -94,7 +94,7 @@ class Agent():
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size * 100:
+		if self.mem_cntr < self.batch_size * 10:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
