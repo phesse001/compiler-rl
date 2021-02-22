@@ -1,14 +1,14 @@
 FROM nvidia/cuda:10.2-base-ubuntu18.04
 
-FROM python:3
-
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir gym && \
-    pip install --no-cache-dir compiler_gym\
-    pip install --no-cache-dir torch torchvision
-
 RUN apt-get install -y gcc g++
 RUN apt-get update && apt-get install -y libtinfo5
+RUN apt-get -y install python3
+RUN apt-get -y install python3-pip
+
+RUN pip3 install --upgrade pip && \
+    pip3 install  gym && \
+    pip3 install --no-cache-dir compiler_gym &&\
+    pip3 install torch torchvision
 
 RUN mkdir -p /compiler_gym
 
