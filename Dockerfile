@@ -15,4 +15,6 @@ RUN mkdir -p /compiler_gym
 
 RUN git clone https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
 
-CMD /bin/bash
+WORKDIR /compiler_gym
+
+CMD ["python3", "-u", "cg_dqn.py"]
