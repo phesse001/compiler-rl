@@ -30,6 +30,7 @@ class DQN(nn.Module):
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+		self.to(self.device)
 		
 
 	def forward(self, state):
