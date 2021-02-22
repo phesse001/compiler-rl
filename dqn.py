@@ -105,7 +105,7 @@ class Agent():
 
 		batch_index = np.arange(self.batch_size, dtype = np.int32)
 		# sending a (random)batch of states to device
-		state_batch = torch.Tensor(self.state_mem[batch]).to(self.Q_eval.device)
+		state_batch = torch.tensor(self.state_mem[batch]).to(self.Q_eval.device)
 		new_state_batch = torch.tensor(self.new_state_mem[batch]).to(self.Q_eval.device)
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
