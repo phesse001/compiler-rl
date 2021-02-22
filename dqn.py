@@ -30,8 +30,8 @@ class DQN(nn.Module):
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-		print(torch.device)
 		self.to(self.device)
+		
 
 	def forward(self, state):
 		# first fully connected layer takes the state in as input, pass that output as input to activation function
@@ -94,7 +94,7 @@ class Agent():
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size * 100:
+		if self.mem_cntr < self.batch_size * 10:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
@@ -106,7 +106,7 @@ class Agent():
 
 		batch_index = np.arange(self.batch_size, dtype = np.int32)
 		# sending a (random)batch of states to device
-		state_batch = torch.Tensor(self.state_mem[batch]).to(self.Q_eval.device)
+		state_batch = torch.tensor(self.state_mem[batch]).to(self.Q_eval.device)
 		new_state_batch = torch.tensor(self.new_state_mem[batch]).to(self.Q_eval.device)
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)

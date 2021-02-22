@@ -30,16 +30,14 @@ for i in range(1,101):
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
+    actions_taken = 0
     while not done:
-        bcf = env.observation['BitcodeFile']
-        print(bcf)
-        # compile and run initial IR
-        # take action
-        action = agent.choose_action(observation)
+    	#only apply finite number of actions to given program
+    	if actions_taken < 40:
+            action = agent.choose_action(observation)
         new_observation, reward, done, info = env.step(action)
-        # compile and run transformed IR
-        # calculate reward as ln(T(s1)/T(s1+1))
-        # check total to allow for sequence of actions
+        actions_taken += 1
+        #check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
         #if info['action_had_no_effect'] == False:
