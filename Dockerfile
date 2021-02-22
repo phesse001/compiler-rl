@@ -1,9 +1,10 @@
 FROM nvidia/cuda:10.2-base-ubuntu18.04
 
-RUN apt-get install -y gcc g++
-RUN apt-get update && apt-get install -y libtinfo5
+RUN apt-get update
+RUN apt-get install -y libtinfo5
 RUN apt-get -y install python3
 RUN apt-get -y install python3-pip
+RUN apt-get -y install git
 
 RUN pip3 install --upgrade pip && \
     pip3 install  gym && \
