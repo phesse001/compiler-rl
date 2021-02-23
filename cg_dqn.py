@@ -33,7 +33,7 @@ for i in range(1,101):
     actions_taken = 0
     while not done:
     	#only apply finite number of actions to given program
-    	if actions_taken < 40:
+        if actions_taken < 40:
             action = agent.choose_action(observation)
         new_observation, reward, done, info = env.step(action)
         actions_taken += 1
