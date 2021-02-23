@@ -26,7 +26,7 @@ print(env.benchmarks)
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
-    cpuinfo = env.observation["CpuInfo"]
+    cpuinfo = env.observation["CpuInfo"]s
     #observation = np.append(observation, cpuinfo)
     #observation = observation.astype(np.float32)
     #maybe try setting done to true every time code size increases
@@ -49,7 +49,9 @@ for i in range(1,10001):
 
 
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
-print(env.commandline())
+# print(env.commandline())
 # save the model for future reference
 # env.write_bitcode("./cg_autotuned_program.bc")
+PATH = './cg_dqn.pth'
+torch.save(agent.Q_eval.state_dict(), PATH)
 env.close()

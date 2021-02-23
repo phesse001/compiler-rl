@@ -31,7 +31,7 @@ class DQN(nn.Module):
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 		self.to(self.device)
-		
+
 
 	def forward(self, state):
 		# first fully connected layer takes the state in as input, pass that output as input to activation function
@@ -86,6 +86,10 @@ class Agent():
 			state = torch.tensor([observation]).to(self.Q_eval.device)
 			actions = self.Q_eval.forward(state)
 			action = torch.argmax(actions).item()
+			# network seems to choose same action over and over, even with zero reward,
+			# trying giving negative reward for choosing same action multiple times
+			if action == self.action_mem[self.mem_cntr]:
+				#do stuff
 		else:
 			# take random action
 			action = np.random.choice(self.action_space)
