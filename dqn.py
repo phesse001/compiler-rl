@@ -46,7 +46,7 @@ class Agent():
 	# gamma is the weighting of furture rewards
 	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
-	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5):
+	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, MAX_ITER = 40):
 		self.gamma = gamma
 		self.epsilon = epsilon
 		self.eps_end = eps_end
@@ -85,11 +85,12 @@ class Agent():
 			observation = observation.astype(np.float32)
 			state = torch.tensor([observation]).to(self.Q_eval.device)
 			actions = self.Q_eval.forward(state)
-			action = torch.argmax(actions).item()
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			if action == self.action_mem[self.mem_cntr]:
-				#do stuff
+			if torch.argmax(actions).item() == self.action_mem[self.mem_cntr -1]:
+				actions[torch.argmax(actions).item()] = 0
+			action = torch.argmax(actions).item()
+
 		else:
 			# take random action
 			action = np.random.choice(self.action_space)
@@ -98,7 +99,7 @@ class Agent():
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size * 10:
+		if self.mem_cntr < self.batch_size * 100:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
