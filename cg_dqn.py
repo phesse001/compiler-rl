@@ -10,13 +10,11 @@ import numpy as np
 env = gym.make("llvm-autophase-codesize-v0")
 
 # Use existing dqn to make better decisions
-agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
+agent = Agent(gamma = 0.90, epsilon = 1.0, batch_size = 32,
             n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
 env.require_datasets(['cBench-v0', 'mibench-v0', 'blas-v0', 'polybench-v0', 'npb-v0'])
-
-print(env.benchmarks)
 
 # action space is described by env.action_space
 # the observation space (autophase) is a 56 dimensional vector
@@ -26,7 +24,7 @@ print(env.benchmarks)
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
-    cpuinfo = env.observation["CpuInfo"]s
+    cpuinfo = env.observation["CpuInfo"]
     #observation = np.append(observation, cpuinfo)
     #observation = observation.astype(np.float32)
     #maybe try setting done to true every time code size increases
