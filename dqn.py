@@ -88,7 +88,7 @@ class Agent():
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
 			if torch.argmax(actions).item() == self.action_mem[self.mem_cntr -1]:
-				actions[torch.argmax(actions).item()] = 0
+				actions[0][torch.argmax(actions).item()] = 0
 			action = torch.argmax(actions).item()
 
 		else:
