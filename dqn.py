@@ -46,7 +46,8 @@ class Agent():
 	# gamma is the weighting of furture rewards
 	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
-	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, MAX_ITER = 40):
+	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 1000):
+		self.replace_target_cnt = replace
 		self.gamma = gamma
 		self.epsilon = epsilon
 		self.eps_end = eps_end
@@ -59,13 +60,15 @@ class Agent():
 		# keep track of position of first available memory
 		self.mem_cntr = 0
 		self.Q_eval = DQN(alpha, input_dims, fc1_dims=1024, fc2_dims=1024, fc3_dims=1024, n_actions = self.n_actions)
-
+		self.Q_next = DQN(alpha, input_dims, fc1_dims=1024, fc2_dims=1024, fc3_dims=1024, n_actions = self.n_actions)
+		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
 		self.new_state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
 		self.action_mem = np.zeros(self.max_mem_size, dtype=np.int32)
 		self.reward_mem = np.zeros(self.max_mem_size, dtype=np.float32)
 		self.terminal_mem = np.zeros(self.max_mem_size, dtype=np.bool)
+		self.learn_step_counter = 0
 
 	def store_transition(self, action, state, reward, new_state, done):
 		# what is the position of the first unoccupied memory
@@ -87,9 +90,14 @@ class Agent():
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			if torch.argmax(actions).item() == self.action_mem[self.mem_cntr -1]:
+
+			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0
+			
+			# the maximum action that hasen't been taken
 			action = torch.argmax(actions).item()
+
+			self.actions_taken.append(action)
 
 		else:
 			# take random action
@@ -97,12 +105,18 @@ class Agent():
 
 		return action
 
+	def replace_target_network(self):
+		if self.learn_step_counter % self.replace_target_cnt == 0:
+			self.Q_next.load_state_dict(self.Q_eval.state_dict())
+
+
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
 		if self.mem_cntr < self.batch_size * 100:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
+		self.replace_target_network()
 		# select subset of memorys
 		max_mem = min(self.mem_cntr, self.max_mem_size)
 		# take a selection of the size of the batch size from the current pool of memory's
@@ -116,14 +130,16 @@ class Agent():
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
 		action_batch = self.action_mem[batch]
+		# gets the values from the actions taken
 		q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
-		q_next = self.Q_eval.forward(new_state_batch)
+		q_next = self.Q_next.forward(new_state_batch).max(dim=1)[0]
 		q_next[terminal_batch] = 0.0
-		q_target = reward_batch + self.gamma * torch.max(q_next, dim=1)[0]
+		q_target = reward_batch + self.gamma * q_next
 
 		loss = self.Q_eval.loss(q_target, q_eval).to(self.Q_eval.device)
 		loss.backward()
 		self.Q_eval.optimizer.step()
+		self.learn_step_counter += 1
 
 		if self.epsilon > self.eps_end:
 		    self.epsilon -= self.eps_dec
