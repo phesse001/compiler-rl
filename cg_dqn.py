@@ -21,7 +21,7 @@ env.require_datasets(['cBench-v0', 'mibench-v0', 'blas-v0', 'polybench-v0', 'npb
 # the observation space (autophase) is a 56 dimensional vector
 
 # env.reset() must be called to initialize environment and create initial observation of said env
-
+tmp = 0
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
@@ -31,7 +31,6 @@ for i in range(1,10001):
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
-    avg = 0
     actions_taken = 0
     agent.actions_taken = []
     # collect data for visualization
@@ -45,7 +44,7 @@ for i in range(1,10001):
         #check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
-        if info.has_key('action_had_no_effect'):
+        if 'action_had_no_effect' in info:
             if info['action_had_no_effect'] == False:
                 agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
