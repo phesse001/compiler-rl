@@ -2,6 +2,7 @@ import gym
 import compiler_gym
 from dqn import Agent
 import numpy as np
+import matplotlib.pyplot as plt
 
 # envs -> compiler_gym.COMPILER_GYM_ENVS
 
@@ -30,8 +31,12 @@ for i in range(1,10001):
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
+    avg = 0
     actions_taken = 0
     agent.actions_taken = []
+    # collect data for visualization
+    iterations = []
+    avg_total = []
     while done == False and actions_taken < 40:
     	#only apply finite number of actions to given program
         action = agent.choose_action(observation)
@@ -40,15 +45,19 @@ for i in range(1,10001):
         #check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
-        print(str(info))
-        if info['action_had_no_effect'] == False:
-            agent.store_transition(action, observation, reward, new_observation, done)
+        if info.has_key('action_had_no_effect'):
+            if info['action_had_no_effect'] == False:
+                agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
         observation = new_observation
         print("Step " + str(i) + " Cumulative Total " + str(total) +
               " Epsilon " + str(agent.epsilon) + " Action " + str(action) + " No Effect " + str(info['action_had_no_effect']))
+    tmp += total
+    avg_total.append(tmp/i)
+    iterations.append(i)
 
-
+plt.scatter(iterations,avg_total)
+plt.show()
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
 # print(env.commandline())
 # save the model for future reference
