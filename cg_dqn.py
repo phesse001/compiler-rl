@@ -31,6 +31,7 @@ for i in range(1,10001):
     done = False
     total = 0
     actions_taken = 0
+    agent.actions_taken = []
     while done == False and actions_taken < 40:
     	#only apply finite number of actions to given program
         action = agent.choose_action(observation)
@@ -43,7 +44,8 @@ for i in range(1,10001):
             agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
         observation = new_observation
-        print("Step " + str(i) + " Cumulative Total " + str(total) +  " Epsilon " + str(agent.epsilon) + " Action " + str(action))
+        print("Step " + str(i) + " Cumulative Total " + str(total) +
+              " Epsilon " + str(agent.epsilon) + " Action " + str(action) + " No Effect " + str(info['action_had_no_effect']))
 
 
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
