@@ -40,6 +40,7 @@ for i in range(1,10001):
         #check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
+        print(str(info))
         if info['action_had_no_effect'] == False:
             agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
