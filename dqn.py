@@ -79,7 +79,6 @@ class Agent():
 		self.action_mem[index] = action
 		self.reward_mem[index] = reward
 		self.terminal_mem[index] = done
-		self.priority_mem[index] = max(self.priority_mem, default=1)
 
 		self.mem_cntr += 1
 
@@ -113,7 +112,7 @@ class Agent():
 			self.Q_next.load_state_dict(self.Q_eval.state_dict())
 
 
-	def learn(self, priority_scale):
+	def learn(self):
 		# start learning as soon as batch size of memory is filled
 		if self.mem_cntr < self.batch_size * 100:
 			return
