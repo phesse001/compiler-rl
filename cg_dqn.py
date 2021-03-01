@@ -44,19 +44,20 @@ for i in range(1,10001):
         #check total to allow for sequence of actions
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
-        if 'action_had_no_effect' in info:
-            if info['action_had_no_effect'] == False:
-                agent.store_transition(action, observation, reward, new_observation, done)
-        agent.learn()
+        agent.store_transition(action, observation, reward, new_observation, done)
+        agent.learn(0.7)
         observation = new_observation
         print("Step " + str(i) + " Cumulative Total " + str(total) +
-              " Epsilon " + str(agent.epsilon) + " Action " + str(action) + " No Effect " + str(info['action_had_no_effect']))
+              " Epsilon " + str(agent.epsilon) + " Action " + str(action) + 
+              " No Effect " + str(info))
     tmp += total
+    print("avg is " + str(tmp/i))
     avg_total.append(tmp/i)
     iterations.append(i)
 
 plt.scatter(iterations,avg_total)
 plt.show()
+plt.savefig("dqn_avg_tot.png")
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
 # print(env.commandline())
 # save the model for future reference
