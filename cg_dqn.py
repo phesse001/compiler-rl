@@ -45,7 +45,7 @@ for i in range(1,10001):
         total += reward
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
         agent.store_transition(action, observation, reward, new_observation, done)
-        agent.learn(0.7)
+        agent.learn()
         observation = new_observation
         print("Step " + str(i) + " Cumulative Total " + str(total) +
               " Epsilon " + str(agent.epsilon) + " Action " + str(action) + 
