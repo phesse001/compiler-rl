@@ -161,6 +161,7 @@ class Agent():
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
 		action_batch = self.action_mem[batch]
 		priority_batch = self.priority_mem[batch]
+		importance_batch = torch.tensor(self.importance[batch]).to(self.Q_eval.device)
 		# gets the values from the actions taken
 		q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
 		q_next = self.Q_next.forward(new_state_batch).max(dim=1)[0]
@@ -168,8 +169,8 @@ class Agent():
 		q_target = reward_batch + self.gamma * q_next
 		error = q_eval - q_target
 		self.set_priorties(batch, error)
-		q_target *= torch.tensor(importance[batch])
-		q_eval *= torch.tensor(importance[batch])
+		q_target *= importance_batch
+		q_eval *= importance_batch
 		loss = self.Q_eval.loss(q_target, q_eval).to(self.Q_eval.device)
 		loss.backward()
 		self.Q_eval.optimizer.step()
