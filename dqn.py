@@ -69,7 +69,6 @@ class Agent():
 		self.action_mem = np.zeros(self.max_mem_size, dtype=np.int32)
 		self.reward_mem = np.zeros(self.max_mem_size, dtype=np.float32)
 		self.terminal_mem = np.zeros(self.max_mem_size, dtype=np.bool)
-		self.priority_mem = np.ones(self.max_mem_size,dtype=np.int32)
 		self.learn_step_counter = 0
 
 	def store_transition(self, action, state, reward, new_state, done):
@@ -84,12 +83,6 @@ class Agent():
 
 		self.mem_cntr += 1
 
-	def get_probabilities(self, priority_scale):
-		scaled_probabilities = self.priority_mem ** priority_scale
-		sample_probabilities = scaled_probabilities/sum(scaled_probabilities)
-		where_are_NaNs = isnan(sample_probabilities)
-		sample_probabilities[where_are_NaNs] = 0
-		return sample_probabilities
 
 	def choose_action(self, observation):
 		if np.random.random() > self.epsilon:
@@ -119,20 +112,6 @@ class Agent():
 		if self.learn_step_counter % self.replace_target_cnt == 0:
 			self.Q_next.load_state_dict(self.Q_eval.state_dict())
 
-	def get_importance(self,probabilites):
-		importance = 1/self.mem_cntr * 1/probabilites
-		importance_normalized = importance / max(importance)
-		return importance_normalized
-
-	def set_priorties(self,indicies, errors, offset=0.1):
-		for i,e in zip(indicies,errors):
-			self.priority_mem[i] = abs(e) + offset
-
-	def scale_probs(self, probs):
-		total = sum(probs)
-		for i in range(len(probs)):
-			probs[i] = probs[i]/total
-		return probs
 
 	def learn(self, priority_scale):
 		# start learning as soon as batch size of memory is filled
@@ -145,14 +124,8 @@ class Agent():
 		max_mem = min(self.mem_cntr, self.max_mem_size)
 		# take a selection of the size of the batch size from the current pool of memory's
 		# pool of memory's will be full by the time we get here
-		# use probability distribution calculated from get_probabilities()
-		batch_probs = self.get_probabilities(priority_scale)
-		# not sure if this breaks some mathematical rule, but trying scaling chosen probabilites
-		# for ex, [.1,.2,.1,.1] -> [.2,.4,.2,.2]
-		scaled_probs = self.scale_probs(batch_probs[:max_mem])
-		batch = np.random.choice(max_mem, self.batch_size, replace=False, p=scaled_probs)
+		batch = np.random.choice(max_mem, self.batch_size, replace=False)
 		# have to calculate scalar of importance so that we don't update network in a biased way
-		importance = self.get_importance(batch_probs) ** (1-self.epsilon)
 		batch_index = np.arange(self.batch_size, dtype = np.int32)
 		# sending a batch of states to device
 		state_batch = torch.tensor(self.state_mem[batch]).to(self.Q_eval.device)
@@ -160,16 +133,11 @@ class Agent():
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
 		action_batch = self.action_mem[batch]
-		importance_batch = torch.tensor(importance[batch]).to(self.Q_eval.device)
 		# gets the values from the actions taken
 		q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
 		q_next = self.Q_next.forward(new_state_batch).max(dim=1)[0]
 		q_next[terminal_batch] = 0.0
 		q_target = reward_batch + self.gamma * q_next
-		error = q_eval - q_target
-		self.set_priorties(batch, error)
-		q_target *= importance_batch
-		q_eval *= importance_batch
 		loss = self.Q_eval.loss(q_target, q_eval).to(self.Q_eval.device)
 		loss.backward()
 		self.Q_eval.optimizer.step()
