@@ -43,7 +43,7 @@ class DQN(nn.Module):
 
 		return actions
 
-class Agent():
+class Agent(nn.Module):
 	# gamma is the weighting of furture rewards
 	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
@@ -70,6 +70,7 @@ class Agent():
 		self.reward_mem = np.zeros(self.max_mem_size, dtype=np.float32)
 		self.terminal_mem = np.zeros(self.max_mem_size, dtype=np.bool)
 		self.learn_step_counter = 0
+		self.to(self.Q_eval.device)
 
 	def store_transition(self, action, state, reward, new_state, done):
 		# what is the position of the first unoccupied memory
@@ -114,7 +115,7 @@ class Agent():
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size * 100:
+		if self.mem_cntr < self.batch_size:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
