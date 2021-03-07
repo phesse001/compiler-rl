@@ -25,9 +25,6 @@ tmp = 0
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
-    cpuinfo = env.observation["CpuInfo"]
-    #observation = np.append(observation, cpuinfo)
-    #observation = observation.astype(np.float32)
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
@@ -36,13 +33,19 @@ for i in range(1,10001):
     # collect data for visualization
     iterations = []
     avg_total = []
-    while done == False and actions_taken < 40:
+    change_count = 0
+    while done == False and actions_taken < 100 and change_count < 10:
     	#only apply finite number of actions to given program
         action = agent.choose_action(observation)
+        
         new_observation, reward, done, info = env.step(action)
         actions_taken += 1
         #check total to allow for sequence of actions
         total += reward
+        if reward == 0:
+            change_count += 1
+        else:
+            change_count = 0
         #might be more useful to only store memory's of transitions where there was an effect(good or bad)
         agent.store_transition(action, observation, reward, new_observation, done)
         agent.learn()
