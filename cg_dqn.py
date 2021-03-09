@@ -12,7 +12,7 @@ import torch
 env = gym.make("llvm-autophase-codesize-v0")
 
 # Use existing dqn to make better decisions
-agent = Agent(gamma = 0.90, epsilon = 1.0, batch_size = 32,
+agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
             n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
@@ -34,7 +34,10 @@ for i in range(1,10001):
     # collect data for visualization
     iterations = []
     avg_total = []
+    avg_500 = []
     change_count = 0
+    tmp2 = 0
+    cnt = 1
     while done == False and actions_taken < 100 and change_count < 10:
     	#only apply finite number of actions to given program
         action = agent.choose_action(observation)
@@ -55,9 +58,18 @@ for i in range(1,10001):
               " Epsilon " + str(agent.epsilon) + " Action " + str(action) + 
               " No Effect " + str(info))
     tmp += total
+    if(i % 500):
+        avg_500.append(tmp2/cnt)
+        tmp2 = 0
+        cnt = 0
+    cnt +=1
+    tmp2 += total
     print("avg is " + str(tmp/i))
     avg_total.append(tmp/i)
     iterations.append(i)
+
+iterations2 = np.arange(1,9).tolist()
+plt.scatter(iterations2, avg_500)
 
 plt.scatter(iterations,avg_total)
 plt.savefig("dqn_avg_tot.png")
