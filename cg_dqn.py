@@ -3,6 +3,7 @@ import compiler_gym
 from dqn import Agent
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 
 # envs -> compiler_gym.COMPILER_GYM_ENVS
 
@@ -59,7 +60,6 @@ for i in range(1,10001):
     iterations.append(i)
 
 plt.scatter(iterations,avg_total)
-plt.show()
 plt.savefig("dqn_avg_tot.png")
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
 # print(env.commandline())
