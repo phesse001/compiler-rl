@@ -23,7 +23,7 @@ env.require_datasets(['cBench-v0', 'mibench-v0', 'blas-v0', 'polybench-v0', 'npb
 
 # env.reset() must be called to initialize environment and create initial observation of said env
 tmp = 0
-for i in range(1,10001):
+for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
     #maybe try setting done to true every time code size increases
@@ -34,14 +34,15 @@ for i in range(1,10001):
     # collect data for visualization
     iterations = []
     avg_total = []
-    avg_500 = []
+    actions_cntr = 0
     change_count = 0
-    tmp2 = 0
-    cnt = 1
-    while done == False and actions_taken < 100 and change_count < 10:
-    	#only apply finite number of actions to given program
+    while done == False and actions_taken < 100 and change_count < 15:
+    	  #only apply finite number of actions to given program
         action = agent.choose_action(observation)
-        
+        actions_cntr += 1
+        #allow for any action after 10 instead of whole episode (see it ends up taking same action every  10...)
+        if actions_cntr == 10:
+            agent.actions_taken = []
         new_observation, reward, done, info = env.step(action)
         actions_taken += 1
         #check total to allow for sequence of actions
@@ -58,19 +59,10 @@ for i in range(1,10001):
               " Epsilon " + str(agent.epsilon) + " Action " + str(action) + 
               " No Effect " + str(info))
     tmp += total
-    if(i % 500):
-        avg_500.append(tmp2/cnt)
-        tmp2 = 0
-        cnt = 0
-    cnt +=1
-    tmp2 += total
     print("avg is " + str(tmp/i))
     avg_total.append(tmp/i)
     iterations.append(i)
 
-iterations2 = np.arange(1,9).tolist()
-plt.scatter(iterations2, avg_500)
-plt.savefig("dqn_500_tot.png")
 
 plt.scatter(iterations,avg_total)
 plt.savefig("dqn_avg_tot.png")

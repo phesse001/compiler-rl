@@ -9,12 +9,11 @@ RUN apt-get -y install git
 RUN pip3 install --upgrade pip && \
     pip3 install  gym && \
     pip3 install --no-cache-dir compiler_gym &&\
-    pip3 install torch torchvision
+    pip3 install torch torchvision &&\
+    pip3 install matplotlib
 
 RUN mkdir -p /compiler_gym
 
 RUN git clone https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
 
 WORKDIR /compiler_gym
-
-CMD ["python3", "-u", "cg_dqn.py"]
