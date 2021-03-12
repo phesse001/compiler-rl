@@ -23,7 +23,7 @@ env.require_datasets(['cBench-v0', 'mibench-v0', 'blas-v0', 'polybench-v0', 'npb
 
 # env.reset() must be called to initialize environment and create initial observation of said env
 tmp = 0
-for i in range(1,15001):
+for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
     #maybe try setting done to true every time code size increases
@@ -36,13 +36,14 @@ for i in range(1,15001):
     avg_total = []
     actions_cntr = 0
     change_count = 0
-    while done == False and actions_taken < 100 and change_count < 15:
+    while done == False and actions_taken < 100 and change_count < 10:
     	  #only apply finite number of actions to given program
         action = agent.choose_action(observation)
         actions_cntr += 1
         #allow for any action after 10 instead of whole episode (see it ends up taking same action every  10...)
         if actions_cntr == 10:
             agent.actions_taken = []
+            actions_cntr = 0
         new_observation, reward, done, info = env.step(action)
         actions_taken += 1
         #check total to allow for sequence of actions
