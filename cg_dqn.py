@@ -3,6 +3,7 @@ import compiler_gym
 from dqn import Agent
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 
 # envs -> compiler_gym.COMPILER_GYM_ENVS
 
@@ -25,9 +26,6 @@ tmp = 0
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
-    cpuinfo = env.observation["CpuInfo"]
-    #observation = np.append(observation, cpuinfo)
-    #observation = observation.astype(np.float32)
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
@@ -56,7 +54,6 @@ for i in range(1,10001):
     iterations.append(i)
 
 plt.scatter(iterations,avg_total)
-plt.show()
 plt.savefig("dqn_avg_tot.png")
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
 # print(env.commandline())
