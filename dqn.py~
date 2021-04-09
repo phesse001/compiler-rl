@@ -94,10 +94,10 @@ class Agent(nn.Module):
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			'''
+
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0
-			'''
+			
 			# the maximum action that hasen't been taken
 			action = torch.argmax(actions).item()
 			
@@ -117,7 +117,7 @@ class Agent(nn.Module):
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size:
+		if self.mem_cntr < self.batch_size * 100:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
