@@ -10,12 +10,6 @@ import torch
 # Compiler = LLVM | Observation Type = Autophase | Reward Signal = IR Instruction count relative to -Oz
 
 env = gym.make("llvm-autophase-ic-v0")
-#number of elements from autophase feature
-num_actions = env.action_space.n
-previous_actions = np.zeros((num_actions,))
-previous_actions = previous_actions.astype('int64')
-print(type(previous_actions))
-# 
 
 # Use existing dqn to make better decisions
 agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
@@ -32,6 +26,11 @@ tmp = 0
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
+    #number of elements from autophase feature
+    num_actions = env.action_space.n
+    previous_actions = np.zeros((num_actions,))
+    previous_actions = previous_actions.astype('int64')
+    observation = np.concatenate((observation,previous_actions))
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
@@ -43,12 +42,12 @@ for i in range(1,10001):
     change_count = 0
     while done == False and actions_taken < 100 and change_count < 10:
     	#only apply finite number of actions to given program
-        observation = np.concatenate((observation,previous_actions))
-        #print(observation)
         action = agent.choose_action(observation)
+        #add to previous actions
+        previous_actions[action] += 1
         new_observation, reward, done, info = env.step(action)
-
-        print(new_observation)
+        #concatenate previous actions vector with autophase
+        new_observation = np.concatenate((new_observation,previous_actions))
         actions_taken += 1
         #check total to allow for sequence of actions
         total += reward
