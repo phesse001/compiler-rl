@@ -16,14 +16,14 @@ agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
             n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56 + int(env.action_space.n)], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
-env.require_datasets(['cBench-v0', 'mibench-v0'])
+env.require_datasets(['cBench-v0'])
 
 # action space is described by env.action_space
 # the observation space (autophase) is a 56 dimensional vector
 
 # env.reset() must be called to initialize environment and create initial observation of said env
 tmp = 0
-for i in range(1,10001):
+for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
     #number of elements from autophase feature
