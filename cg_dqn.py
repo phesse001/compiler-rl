@@ -2,7 +2,6 @@ import gym
 import compiler_gym
 from dqn import Agent
 import numpy as np
-import torch
 
 def train(env):
     # try running using cbench dataset
@@ -36,4 +35,3 @@ def train(env):
 	        agent.store_transition(action, observation, reward, new_observation, done)
 	        agent.learn()
 	        observation = new_observation
-
