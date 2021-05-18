@@ -27,6 +27,11 @@ tmp = 0
 for i in range(1,10001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
+    #number of elements from autophase feature
+    num_actions = env.action_space.n
+    previous_actions = np.zeros((num_actions,))
+    previous_actions = previous_actions.astype('int64')
+    observation = np.concatenate((observation,previous_actions))
     #maybe try setting done to true every time code size increases
     done = False
     total = 0
@@ -37,10 +42,13 @@ for i in range(1,10001):
     avg_total = []
     change_count = 0
     while done == False and actions_taken < 100 and change_count < 10:
-    	#only apply finite number of actions to given program
+    	  #only apply finite number of actions to given program
         action = agent.choose_action(observation)
-        
+        #add to previous actions
+        previous_actions[action] += 1
         new_observation, reward, done, info = env.step(action)
+        #concatenate previous actions vector with autophase
+        new_observation = np.concatenate((new_observation,previous_actions))
         actions_taken += 1
         #check total to allow for sequence of actions
         total += reward
@@ -59,8 +67,7 @@ for i in range(1,10001):
     print("avg is " + str(tmp/i))
     avg_total.append(tmp/i)
     iterations.append(i)
-
-
+    
 plt.scatter(iterations,avg_total)
 plt.savefig("dqn_avg_tot.png")
 # env.commandline() will write the opt command equivalent to the sequence of transformations made by agent
