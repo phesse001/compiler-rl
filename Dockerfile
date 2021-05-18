@@ -5,10 +5,12 @@ RUN apt-get update && \
     apt-get -y install python3 && \
     apt-get -y install python3-pip && \
     apt-get -y install git && \
-    apt install apt-transport-https curl gnupg && \
+    apt-get -y install apt-transport-https curl gnupg && \
     curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg && \
     mv bazel.gpg /etc/apt/trusted.gpg.d/ && \
-    echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+    echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list && \
+    apt-get update && \
+    apt-get -y install bazel
 
 
 RUN pip3 install --upgrade pip && \
