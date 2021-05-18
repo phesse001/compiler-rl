@@ -1,10 +1,15 @@
 FROM nvidia/cuda:10.2-base-ubuntu18.04
 
-RUN apt-get update
-RUN apt-get install -y libtinfo5
-RUN apt-get -y install python3
-RUN apt-get -y install python3-pip
-RUN apt-get -y install git
+RUN apt-get update && \
+    apt-get install -y libtinfo5 && \
+    apt-get -y install python3 && \
+    apt-get -y install python3-pip && \
+    apt-get -y install git && \
+    apt install apt-transport-https curl gnupg && \
+    curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg && \
+    mv bazel.gpg /etc/apt/trusted.gpg.d/ && \
+    echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+
 
 RUN pip3 install --upgrade pip && \
     pip3 install  gym && \
@@ -14,6 +19,6 @@ RUN pip3 install --upgrade pip && \
 
 RUN mkdir -p /compiler_gym
 
-RUN git clone --single-branch --branch no-per https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
+RUN git clone --single-branch --branch leaderboard https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
 
 WORKDIR /compiler_gym
