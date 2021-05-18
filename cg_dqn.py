@@ -9,14 +9,15 @@ import torch
 
 # Compiler = LLVM | Observation Type = Autophase | Reward Signal = IR Instruction count relative to -Oz
 
-env = gym.make("llvm-autophase-ic-v0")
+env = gym.make("llvm-ic-v0")
+env.observation_space = "InstCount"
 
 # Use existing dqn to make better decisions
-agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
-            n_actions = env.action_space.n, eps_end = 0.05, input_dims = [56 + int(env.action_space.n)], alpha = 0.005)
+agent = Agent(gamma = 0.90, epsilon = 1.0, batch_size = 32,
+            n_actions = env.action_space.n, eps_end = 0.05, input_dims = [70], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
-env.require_datasets(['cBench-v0'])
+env.require_datasets(['cBench-v0', 'cBench-v1'])
 
 # action space is described by env.action_space
 # the observation space (autophase) is a 56 dimensional vector
@@ -39,7 +40,6 @@ for i in range(1,15001):
     # collect data for visualization
     iterations = []
     avg_total = []
-
     change_count = 0
     while done == False and actions_taken < 100 and change_count < 10:
     	  #only apply finite number of actions to given program
