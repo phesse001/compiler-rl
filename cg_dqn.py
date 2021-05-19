@@ -26,6 +26,9 @@ action_space = env.action_space.names
 
 # env.reset() must be called to initialize environment and create initial observation of said env
 tmp = 0
+# collect data for visualization
+iterations = []
+avg_total = []
 for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
@@ -33,9 +36,6 @@ for i in range(1,15001):
     total = 0
     actions_taken = 0
     agent.actions_taken = []
-    # collect data for visualization
-    iterations = []
-    avg_total = []
     change_count = 0
     while done == False and actions_taken < 100 and change_count < 20:
         action = agent.choose_action(observation)
