@@ -32,6 +32,7 @@ avg_total = []
 for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
+    done = False
     total = 0
     actions_taken = 0
     agent.actions_taken = []
