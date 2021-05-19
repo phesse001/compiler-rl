@@ -98,9 +98,21 @@ class Agent(nn.Module):
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0
 			'''
-			# the maximum action that hasen't been taken
-			action = torch.argmax(actions).item()
+
+			'''
+			try using Boltzmann equation (from https://datascience.stackexchange.com
+			/questions/61262/agent-always-takes-a-same-action-in-dqn-reinforcement-learning)
+			instead of argmax to not choose same action over and over
+			'''
 			
+			actions = actions.detach().numpy()
+			actions = actions - np.max(actions)
+			beta = 1
+			p_a_s = np.exp(beta * actions)/np.sum(np.exp(beta * actions))
+			action = np.random.choice(a=self.n_actions, p=p_a_s[0])
+			
+
+			#action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
 
