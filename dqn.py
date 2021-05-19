@@ -94,13 +94,22 @@ class Agent(nn.Module):
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			
+			'''
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0
-			
-			# the maximum action that hasen't been taken
-			action = torch.argmax(actions).item()
-			
+			'''
+
+			'''
+			try using Bolzmann equation (from https://datascience.stackexchange.com
+			/questions/61262/agent-always-takes-a-same-action-in-dqn-reinforcement-learning)
+			instead of argmax to not choose same action over and over
+			'''
+
+			actions = actions.detach().numpy()
+			actions = actions - np.max(actions)
+			beta = 1
+			p_a_s = np.exp(beta * actions)/np.sum(np.exp(beta * actions))
+			action = np.random.choice(a=self.n_actions, p=p_a_s[0])
 
 			self.actions_taken.append(action)
 
@@ -117,7 +126,7 @@ class Agent(nn.Module):
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size * 100:
+		if self.mem_cntr < self.batch_size:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
