@@ -104,12 +104,12 @@ class Agent(nn.Module):
 			/questions/61262/agent-always-takes-a-same-action-in-dqn-reinforcement-learning)
 			instead of argmax to not choose same action over and over
 			'''
-			
-			#actions = actions.detach().numpy()
-			actions = actions - torch.max(actions)
+			actions = actions.cpu()
+			actions = actions.detach().numpy()
+			actions = actions - np.max(actions)
 			beta = 1
-			p_a_s = torch.exp(beta * actions)/torch.sum(torch.exp(beta * actions))
-			action = np.random.choice(a=self.n_actions, p=(p_a_s).detach().numpy()[0])
+			p_a_s = np.exp(beta * actions)/np.sum(np.exp(beta * actions))
+			action = np.random.choice(a=self.n_actions, p=p_a_s[0])
 			
 
 			#action = torch.argmax(actions).item()
