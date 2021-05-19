@@ -14,24 +14,19 @@ env.observation_space = "InstCount"
 
 # Use existing dqn to make better decisions
 agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
-            n_actions = env.action_space.n, eps_end = 0.05, input_dims = [70], alpha = 0.005)
+            n_actions = env.action_space.n, eps_end = 0.1, input_dims = [70], alpha = 0.005)
 
 # download existing dataset of programs/benchmarks
-env.require_datasets(['cBench-v0', 'cBench-v1'])
 
 action_space = env.action_space.names
 
-# action space is described by env.action_space
-# the observation space (autophase) is a 56 dimensional vector
-
-# env.reset() must be called to initialize environment and create initial observation of said env
 tmp = 0
 # collect data for visualization
 iterations = []
 avg_total = []
 for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
-    observation = env.reset()
+    observation = env.reset(benchmark = "benchmark://cBench-v1/sha")
     done = False
     total = 0
     actions_taken = 0

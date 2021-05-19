@@ -47,7 +47,7 @@ class Agent(nn.Module):
 	# gamma is the weighting of furture rewards
 	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
-	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 500):
+	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 1000):
 		super(Agent,self).__init__()
 		self.replace_target_cnt = replace
 		self.gamma = gamma
@@ -94,15 +94,16 @@ class Agent(nn.Module):
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			'''
+			
 			while torch.argmax(actions).item() in self.actions_taken:
-				actions[0][torch.argmax(actions).item()] = 0
-			'''
+				actions[0][torch.argmax(actions).item()] = -1
+			
 
 			'''
 			try using Boltzmann equation (from https://datascience.stackexchange.com
 			/questions/61262/agent-always-takes-a-same-action-in-dqn-reinforcement-learning)
 			instead of argmax to not choose same action over and over
+			'''
 			'''
 			actions = actions.cpu()
 			actions = actions.detach().numpy()
@@ -110,9 +111,10 @@ class Agent(nn.Module):
 			beta = 1
 			p_a_s = np.exp(beta * actions)/np.sum(np.exp(beta * actions))
 			action = np.random.choice(a=self.n_actions, p=p_a_s[0])
+			'''
 			
 
-			#action = torch.argmax(actions).item()
+			action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
 
