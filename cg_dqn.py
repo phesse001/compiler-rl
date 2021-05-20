@@ -45,6 +45,8 @@ def save_observation(observation):
 
 env = gym.make("llvm-ic-v0")
 env.observation_space = "InstCount"
+benchmarks = [b for b in env.benchmarks if "cBench" in b] # get all cbench benchmarks
+benchmarks = np.asarray(benchmarks)
 
 agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
             n_actions = env.action_space.n, eps_end = 0.1, input_dims = [280], alpha = 0.005)
@@ -59,7 +61,8 @@ iterations = []
 avg_total = []
 for i in range(1,15001):
 	#observation is the 56 dimensional static feature vector from autophase
-    observation = env.reset(benchmark = "benchmark://cBench-v1/sha")
+    observation = env.reset(benchmark = benchmarks[np.random.choice(len(benchmarks))])
+    print(env.benchmark)
     # Let's normalize the input vector...
     observation = normalize(observation)
 
@@ -76,7 +79,6 @@ for i in range(1,15001):
         action = agent.choose_action(observations)
         new_observation, reward, done, info = env.step(action)
         new_observation = normalize(new_observation)
-        print(observations)
         save_observation(new_observation)
 
         # save old observation to be used for store_transition
