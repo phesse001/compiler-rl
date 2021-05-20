@@ -5,7 +5,7 @@ import compiler_gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-PATH = "cg_dqn_llvm_InstCount.pth"
+PATH = "../dqn-results/cg_dqn_llvm_InstCount.pth"
 
 env = gym.make("llvm-ic-v0")
 env.observation_space = "InstCount"
@@ -25,7 +25,7 @@ tmp = 0
 iterations = []
 avg_total = []
 tot = []
-for i in range(1,101):
+for i in range(1,501):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset()
     done = False
