@@ -45,8 +45,16 @@ def save_observation(observation):
 
 env = gym.make("llvm-ic-v0")
 env.observation_space = "InstCount"
-benchmarks = [b for b in env.benchmarks if "cBench" in b] # get all cbench benchmarks
-benchmarks = np.asarray(benchmarks)
+
+for d in env.datasets:
+    if d.name != "benchmark://cbench-v1":
+        del env.datasets[d.name]
+
+dataset = []
+
+for benchmark in env.datasets.benchmarks():
+    dataset.append(benchmark)
+
 
 agent = Agent(gamma = 0.99, epsilon = 1.0, batch_size = 32,
             n_actions = env.action_space.n, eps_end = 0.1, input_dims = [280], alpha = 0.005)
@@ -59,9 +67,10 @@ tmp = 0
 # collect data for visualization
 iterations = []
 avg_total = []
+print(len(dataset))
 for i in range(1,50001):
 	#observation is the 56 dimensional static feature vector from autophase
-    observation = env.reset(benchmark = benchmarks[np.random.choice(len(benchmarks))])
+    observation = env.reset(benchmark = dataset[np.random.choice(len(dataset))])
     print(env.benchmark)
     # Let's normalize the input vector...
     observation = normalize(observation)
@@ -98,7 +107,7 @@ for i in range(1,50001):
         agent.learn()
 
         print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
-              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + str(action_space[action-1]))
+              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + str(action_space[action]))
     
     tmp += total
     print("Average Episode Reward: " + str(tmp/i))
