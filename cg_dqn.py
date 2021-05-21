@@ -67,7 +67,6 @@ tmp = 0
 # collect data for visualization
 iterations = []
 avg_total = []
-print(len(dataset))
 for i in range(1,50001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset(benchmark = dataset[np.random.choice(len(dataset))])
