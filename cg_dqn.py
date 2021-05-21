@@ -59,7 +59,7 @@ tmp = 0
 # collect data for visualization
 iterations = []
 avg_total = []
-for i in range(1,15001):
+for i in range(1,50001):
 	#observation is the 56 dimensional static feature vector from autophase
     observation = env.reset(benchmark = benchmarks[np.random.choice(len(benchmarks))])
     print(env.benchmark)
@@ -74,7 +74,7 @@ for i in range(1,15001):
     agent.actions_taken = []
     change_count = 0
 
-    while done == False and actions_taken < env.action_space.n and change_count < 20:
+    while done == False and actions_taken < env.action_space.n and change_count < 10:
 
         action = agent.choose_action(observations)
         new_observation, reward, done, info = env.step(action)
