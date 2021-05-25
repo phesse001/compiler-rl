@@ -44,10 +44,8 @@ class DQN(nn.Module):
 		return actions
 
 class Agent(nn.Module):
-	# gamma is the weighting of furture rewards
-	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
-	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 5000):
+	         n_actions, eps_end, max_mem_size = 100000, eps_dec = 5e-6, replace = 5000):
 		super(Agent,self).__init__()
 		self.replace_target_cnt = replace
 		self.gamma = gamma
@@ -131,7 +129,7 @@ class Agent(nn.Module):
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < 1000:
+		if self.mem_cntr < self.batch_size:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
