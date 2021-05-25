@@ -114,7 +114,7 @@ for i in range(1,50001):
     iterations.append(i)
     
 plt.scatter(iterations,avg_total)
-plt.savefig("dqn_avg_tot.png")
-PATH = './cg_dqn.pth'
+plt.savefig("motion1_avg_tot.png")
+PATH = './motion1_dqn.pth'
 torch.save(agent.Q_eval.state_dict(), PATH)
 env.close()
