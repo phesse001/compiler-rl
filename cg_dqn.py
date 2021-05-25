@@ -5,13 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
-def diff(obv1, obv2):
-    indices = []
-    for i in range(len(obv1)):
-        if obv1[i] != obv2[i]:
-            indices.append(i)
-    return indices
-
 def save_observation(observation, observations):
     n = 69
     tmp = np.copy(observations)
@@ -85,7 +78,6 @@ for i in range(1,100001):
             change_count += 1
         else:
             change_count = 0
-            test = diff(observations, new_observations)
 
         agent.store_transition(action, observations, reward, new_observations, done)
         agent.learn()
