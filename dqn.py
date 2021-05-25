@@ -47,7 +47,7 @@ class Agent(nn.Module):
 	# gamma is the weighting of furture rewards
 	# epsilon is the amount of time the agent explores environment???
 	def __init__(self, gamma, epsilon, alpha, input_dims, batch_size,
-	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 1000):
+	         n_actions, max_mem_size = 100000, eps_end = 0.01, eps_dec = 5e-5, replace = 5000):
 		super(Agent,self).__init__()
 		self.replace_target_cnt = replace
 		self.gamma = gamma
