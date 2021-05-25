@@ -5,14 +5,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
-observations = np.zeros(276)
+def diff(obv1, obv2):
+    indices = []
+    for i in range(len(obv1)):
+        if obv1[i] != obv2[i]:
+            indices.append(i)
+    return indices
 
-def save_observation(observation):
+def save_observation(observation, observations):
     n = 69
-    observations[3*n:4*n] = observations[2*n:3*n]
-    observations[2*n:3*n] = observations[n:2*n]
-    observations[n:2*n] = observations[0:n]
-    observations[0:n] = observation
+    tmp = np.copy(observations)
+    tmp[3*n:4*n] = tmp[2*n:3*n]
+    tmp[2*n:3*n] = tmp[n:2*n]
+    tmp[n:2*n] = tmp[0:n]
+    tmp[0:n] = observation
+
+    return tmp
 
 
 # Start implementing ideas from Deep RL Bootcamp series on youtube
@@ -54,7 +62,9 @@ avg_total = []
 for i in range(1,100001):
     observation = env.reset(benchmark = dataset[np.random.choice(len(dataset))])
     print(env.benchmark)
-    save_observation(observation)
+
+    observations = np.zeros(276)
+    observations = save_observation(observation, observations)
 
     done = False
     episode_total = 0
@@ -63,12 +73,9 @@ for i in range(1,100001):
     change_count = 0
 
     while done == False and actions_taken < env.action_space.n and change_count < 10:
-
         action = agent.choose_action(observations)
         new_observation, reward, done, info = env.step(action)
-        # save old observation to be used for store_transition
-        old_observations = observations
-        save_observation(new_observation)
+        new_observations = save_observation(new_observation, observations)
 
         actions_taken += 1
 
@@ -78,10 +85,11 @@ for i in range(1,100001):
             change_count += 1
         else:
             change_count = 0
-        
-        agent.store_transition(action, old_observations, reward, observations, done)
-        agent.learn()
+            test = diff(observations, new_observations)
 
+        agent.store_transition(action, observations, reward, new_observations, done)
+        agent.learn()
+        observations = new_observations
         print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(episode_total) +
               " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + str(action_space[action]))
     
