@@ -82,7 +82,7 @@ for i in range(1,50001):
     agent.actions_taken = []
     change_count = 0
 
-    while done == False and actions_taken < env.action_space.n and change_count < 20:
+    while done == False and actions_taken < env.action_space.n and change_count < 10:
 
         action = agent.choose_action(observations)
         new_observation, reward, done, info = env.step(action)
