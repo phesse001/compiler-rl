@@ -4,8 +4,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import math
 import numpy as np
-from numpy import *
-from absl import app, flags
+from absl import flags
+from itertools import islice
+import sys
 
 # Add the ability to replay memory -> The memory should store transitions that the agent observes.
 # By sammpling from this set of memories randomly, the transitions build up a decorrelated batch
@@ -19,36 +20,47 @@ from absl import app, flags
 
 flags.DEFINE_float("gamma", 0.99, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
-flags.DEFINE_float("epsilon_end", 0.01, "The ending value for epsilon.")
-flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
-flags.DEFINE_float("alpha", .05, "The learning rate.")
+flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
+flags.DEFINE_float("epsilon_dec", 5e-6, "The decrement value for epsilon.")
+flags.DEFINE_float("alpha", 0.01, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
-flags.DEFINE_integer("max_mem_size", 32, "The maximum memory size.")
-flags.DEFINE_integer("replace", 500, "The number of iterations to run before replacing target network")
-flags.DEFINE_integer("fc1_dim", 1024, "The dimension of the first fully connected layer")
-flags.DEFINE_integer("fc2_dim", 1024, "The dimension of the second fully connected layer")
-flags.DEFINE_integer("fc3_dim", 1024, "The dimension of the third fully connected layer")
-flags.DEFINE_integer("episodes", 10000, "The number of episodes used to learn")
-flags.DEFINE_integer("episode_length", 100, "The (MAX) number of transformation passes per episode")
-flags.DEFINE_integer("stagnant_value", 10, "The (MAX) number of times to apply a series of transformations without observable change")
+flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
+flags.DEFINE_integer("replace", 5000, "The number of iterations to run before replacing target network")
+flags.DEFINE_integer("fc1_dim", 512, "The dimension of the first fully connected layer")
+flags.DEFINE_integer("fc2_dim", 512, "The dimension of the second fully connected layer")
+flags.DEFINE_integer("fc3_dim", 512, "The dimension of the third fully connected layer")
+flags.DEFINE_integer("fc4_dim", 512, "The dimension of the fourth fully connected layer")
+flags.DEFINE_integer("fc5_dim", 512, "The dimension of the fifth fully connected layer")
+flags.DEFINE_integer("fc6_dim", 512, "The dimension of the sixth fully connected layer")
+flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
+flags.DEFINE_integer("episode_length", 40, "The (MAX) number of transformation passes per episode")
+flags.DEFINE_integer("stagnant_value", 5, "The (MAX) number of times to apply a series of transformations without observable change")
 
 
 FLAGS = flags.FLAGS
+FLAGS(sys.argv)
+
 
 # The Network
 
 class DQN(nn.Module):
-	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, n_actions):
+	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, fc4_dims, fc5_dims, fc6_dims, n_actions):
 		super(DQN,self).__init__()
 		self.input_dims = input_dims
 		self.fc1_dims = fc1_dims
 		self.fc2_dims = fc2_dims
 		self.fc3_dims = fc3_dims
+		self.fc4_dims = fc4_dims
+		self.fc5_dims = fc5_dims
+		self.fc6_dims = fc6_dims
 		self.n_actions = n_actions
 		self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
 		self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
 		self.fc3 = nn.Linear(self.fc2_dims, self.fc3_dims)
-		self.fc4 = nn.Linear(self.fc3_dims, self.n_actions)
+		self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
+		self.fc5 = nn.Linear(self.fc4_dims, self.fc5_dims)
+		self.fc6 = nn.Linear(self.fc5_dims, self.fc6_dims)
+		self.fc7 = nn.Linear(self.fc6_dims, self.n_actions)
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -60,14 +72,16 @@ class DQN(nn.Module):
 		x = F.relu(self.fc1(state))
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
-		actions = self.fc4(x)
+		x = F.relu(self.fc4(x))
+		x = F.relu(self.fc5(x))
+		x = F.relu(self.fc6(x))
+		actions = self.fc7(x)
 
 		return actions
 
 class Agent(nn.Module):
 	def __init__(self, input_dims, n_actions):
 		super(Agent,self).__init__()
-		self.replace = FLAGS.replace
 		self.eps_dec = FLAGS.epsilon_dec
 		self.eps_end = FLAGS.epsilon_end
 		self.max_mem_size = FLAGS.max_mem_size
@@ -82,8 +96,10 @@ class Agent(nn.Module):
 		self.batch_size = FLAGS.batch_size
 		# keep track of position of first available memory
 		self.mem_cntr = 0
-		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim, n_actions = self.n_actions)
-		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim, n_actions = self.n_actions)
+		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
+						fc4_dims=FLAGS.fc4_dim, fc5_dims=FLAGS.fc5_dim, fc6_dims=FLAGS.fc6_dim, n_actions = self.n_actions)
+		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
+						fc4_dims=FLAGS.fc4_dim, fc5_dims=FLAGS.fc5_dim, fc6_dims=FLAGS.fc6_dim,n_actions = self.n_actions)
 		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
@@ -119,22 +135,6 @@ class Agent(nn.Module):
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = -1
 			
-
-			'''
-			try using Boltzmann equation (from https://datascience.stackexchange.com
-			/questions/61262/agent-always-takes-a-same-action-in-dqn-reinforcement-learning)
-			instead of argmax to not choose same action over and over
-			'''
-			'''
-			actions = actions.cpu()
-			actions = actions.detach().numpy()
-			actions = actions - np.max(actions)
-			beta = 1
-			p_a_s = np.exp(beta * actions)/np.sum(np.exp(beta * actions))
-			action = np.random.choice(a=self.n_actions, p=p_a_s[0])
-			'''
-			
-
 			action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
@@ -186,34 +186,36 @@ class Agent(nn.Module):
 			self.epsilon = self.eps_end
 
 def train(agent, env):
-    # try running using cbench dataset
+    action_space = env.action_space.names
+    env.observation_space = "InstCountNorm"
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
+    history = []
+
     for i in range(1, FLAGS.episodes + 1):
-	    #observation is the 56 dimensional static feature vector from autophase
-	    observation = env.reset()
-	    #maybe try setting done to true every time code size increases
+	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    print(env.benchmark)
 	    done = False
 	    total = 0
 	    actions_taken = 0
-	    # reset actions_taken vector for each new benchmark
 	    agent.actions_taken = []
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.stagnant_value:
-	    	 #only apply finite number of actions to given program
 	        action = agent.choose_action(observation)
-	        #add to previous actions
 	        new_observation, reward, done, info = env.step(action)
-
 	        actions_taken += 1
-	        #check total to allow for sequence of actions
 	        total += reward
 	        if reward == 0:
 	            change_count += 1
 	        else:
 	            change_count = 0
-	        #might be more useful to only store memory's of transitions where there was an effect(good or bad)
 	        agent.store_transition(action, observation, reward, new_observation, done)
 	        agent.learn()
 	        observation = new_observation
+	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
+	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + str(action_space[action]))
+
+	    history.append(total)
+	    print("Average total %.2f"%np.mean(history[-100:]))
 
 def rollout(agent, env):
 	observation = env.reset()
@@ -233,4 +235,3 @@ def rollout(agent, env):
 
 	    if done == True or change_count > FLAGS.stagnant_value:
 	    	break
-	return sum(rewards)
