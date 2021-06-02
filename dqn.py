@@ -185,10 +185,20 @@ class Agent(nn.Module):
 		else:
 			self.epsilon = self.eps_end
 
+def save_observation(observation, observations):
+    n = 69
+    tmp = np.copy(observations)
+    tmp[3*n:4*n] = tmp[2*n:3*n]
+    tmp[2*n:3*n] = tmp[n:2*n]
+    tmp[n:2*n] = tmp[0:n]
+    tmp[0:n] = observation
+
+    return tmp
+
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = "InstCountNorm"
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
     history = []
 
     for i in range(1, FLAGS.episodes + 1):

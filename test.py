@@ -4,7 +4,6 @@ import compiler_gym
 from absl import app
 import torch
 
-
 if __name__ == "__main__":
     env = gym.make("llvm-ic-v0")
     env.observation_space = "InstCountNorm"
