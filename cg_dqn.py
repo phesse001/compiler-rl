@@ -2,7 +2,6 @@ import gym
 import compiler_gym
 from dqn import Agent
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
 
 def save_observation(observation, observations):
@@ -91,7 +90,5 @@ for i in range(1,100001):
     iterations.append(i)
     
 plt.scatter(iterations,avg_total)
-plt.savefig("motion1_avg_tot.png")
-PATH = './motion1_dqn.pth'
-torch.save(agent.Q_eval.state_dict(), PATH)
+plt.savefig("avg_tot.png")
 env.close()
