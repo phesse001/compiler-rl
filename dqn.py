@@ -21,7 +21,7 @@ import sys
 flags.DEFINE_float("gamma", 0.99, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
 flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
-flags.DEFINE_float("epsilon_dec", 5e-6, "The decrement value for epsilon.")
+flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
 flags.DEFINE_float("alpha", 0.01, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
@@ -188,7 +188,7 @@ class Agent(nn.Module):
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = "InstCountNorm"
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
     history = []
 
     for i in range(1, FLAGS.episodes + 1):
