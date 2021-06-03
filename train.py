@@ -6,8 +6,7 @@ import torch
 
 if __name__ == "__main__":
     env = gym.make("llvm-ic-v0")
-    env.observation_space = "InstCountNorm"
-    agent = Agent(input_dims = [69], n_actions = env.action_space.n)
-    app.run(train(agent, env))
+    agent = Agent(input_dims = [69], n_actions = 15)
+    train(agent, env)
     PATH = './dqn.pth'
     torch.save(agent.Q_eval.state_dict(), PATH)
