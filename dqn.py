@@ -32,12 +32,12 @@ flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
 flags.DEFINE_integer("replace", 5000, "The number of iterations to run before replacing target network")
-flags.DEFINE_integer("fc1_dim", 512, "The dimension of the first fully connected layer")
-flags.DEFINE_integer("fc2_dim", 512, "The dimension of the second fully connected layer")
-flags.DEFINE_integer("fc3_dim", 512, "The dimension of the third fully connected layer")
-flags.DEFINE_integer("fc4_dim", 512, "The dimension of the fourth fully connected layer")
-flags.DEFINE_integer("fc5_dim", 512, "The dimension of the fifth fully connected layer")
-flags.DEFINE_integer("fc6_dim", 512, "The dimension of the sixth fully connected layer")
+flags.DEFINE_integer("fc1_dim", 256, "The dimension of the first fully connected layer")
+flags.DEFINE_integer("fc2_dim", 256, "The dimension of the second fully connected layer")
+flags.DEFINE_integer("fc3_dim", 256, "The dimension of the third fully connected layer")
+flags.DEFINE_integer("fc4_dim", 256, "The dimension of the fourth fully connected layer")
+flags.DEFINE_integer("fc5_dim", 256, "The dimension of the fifth fully connected layer")
+flags.DEFINE_integer("fc6_dim", 256, "The dimension of the sixth fully connected layer")
 flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 40, "The (MAX) number of transformation passes per episode")
 flags.DEFINE_integer("stagnant_value", 5, "The (MAX) number of times to apply a series of transformations without observable change")
@@ -79,16 +79,12 @@ class DQN(nn.Module):
 		self.fc2_dims = fc2_dims
 		self.fc3_dims = fc3_dims
 		self.fc4_dims = fc4_dims
-		self.fc5_dims = fc5_dims
-		self.fc6_dims = fc6_dims
 		self.n_actions = n_actions
 		self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
 		self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
 		self.fc3 = nn.Linear(self.fc2_dims, self.fc3_dims)
 		self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
-		self.fc5 = nn.Linear(self.fc4_dims, self.fc5_dims)
-		self.fc6 = nn.Linear(self.fc5_dims, self.fc6_dims)
-		self.fc7 = nn.Linear(self.fc6_dims, self.n_actions)
+		self.fc5 = nn.Linear(self.fc4_dims, self.n_actions)
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
 		self.loss = nn.MSELoss()
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -101,9 +97,7 @@ class DQN(nn.Module):
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
 		x = F.relu(self.fc4(x))
-		x = F.relu(self.fc5(x))
-		x = F.relu(self.fc6(x))
-		actions = self.fc7(x)
+		actions = self.fc5(x)
 
 		return actions
 
@@ -125,9 +119,9 @@ class Agent(nn.Module):
 		# keep track of position of first available memory
 		self.mem_cntr = 0
 		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, fc5_dims=FLAGS.fc5_dim, fc6_dims=FLAGS.fc6_dim, n_actions = self.n_actions)
+						fc4_dims=FLAGS.fc4_dim, fc5_dims=self.n_actions)
 		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, fc5_dims=FLAGS.fc5_dim, fc6_dims=FLAGS.fc6_dim,n_actions = self.n_actions)
+						fc4_dims=FLAGS.fc4_dim, fc5_dims=self.n_actions)
 		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
@@ -209,7 +203,6 @@ class Agent(nn.Module):
 		'''
 		q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
 		q_next = self.Q_next.forward(new_state_batch).max(dim=1)[0]
-		terminal_batch = torch.tensor(np.full(32, True)).to(self.Q_eval.device)
 		# if and index of the batch is done (True), then set next reward to 0
 		q_next[terminal_batch] = 0.0
 		q_target = reward_batch + self.gamma * q_next
