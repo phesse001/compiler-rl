@@ -7,22 +7,28 @@ import numpy as np
 from absl import flags
 from itertools import islice
 import sys
+import matplotlib.pyplot as plt
 
-# Add the ability to replay memory -> The memory should store transitions that the agent observes.
-# By sammpling from this set of memories randomly, the transitions build up a decorrelated batch
-# which stabilizes the training.
+# Start implementing ideas from Deep RL Bootcamp series on youtube
 
+'''
+- concatentate observation with previous observations (they used 4)
+- use huber loss (same from [-1,1], but penalizes less for larger errors)
+- use RMSProp instead of grad descent
+- add more exploration at the beginning
+- could try prioritized experience replay again...
+- could also try dueling dqn to see the effect of the advantage property
 
-# Maps the state,action to the next_state,reward
-# Acts sort of like a class -> can call T = Transition(some_state, some_action, ...)
+'''
+
 
 # Flags
 
 flags.DEFINE_float("gamma", 0.99, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
-flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
+flags.DEFINE_float("epsilon_end", 0.02, "The ending value for epsilon.")
 flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
-flags.DEFINE_float("alpha", 0.01, "The learning rate.")
+flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
 flags.DEFINE_integer("replace", 5000, "The number of iterations to run before replacing target network")
@@ -35,6 +41,28 @@ flags.DEFINE_integer("fc6_dim", 512, "The dimension of the sixth fully connected
 flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 40, "The (MAX) number of transformation passes per episode")
 flags.DEFINE_integer("stagnant_value", 5, "The (MAX) number of times to apply a series of transformations without observable change")
+flags.DEFINE_string("observation", "InstCountNorm", "The observation vector to use as input to the DQN")
+flags.DEFINE_list(
+    "actions",
+    [
+        "-break-crit-edges",
+        "-early-cse-memssa",
+        "-gvn-hoist",
+        "-gvn",
+        "-instcombine",
+        "-instsimplify",
+        "-jump-threading",
+        "-loop-reduce",
+        "-loop-rotate",
+        "-loop-versioning",
+        "-mem2reg",
+        "-newgvn",
+        "-reg2mem",
+        "-simplifycfg",
+        "-sroa",
+    ],
+    "A list of action names to explore from.",
+)
 
 
 FLAGS = flags.FLAGS
@@ -121,7 +149,6 @@ class Agent(nn.Module):
 
 		self.mem_cntr += 1
 
-
 	def choose_action(self, observation):
 		if np.random.random() > self.epsilon:
 			# sends observation as tensor to device
@@ -170,9 +197,20 @@ class Agent(nn.Module):
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
 		action_batch = self.action_mem[batch]
-		# gets the values from the actions taken
+		''' 
+		calling forward with a batch of states gives us a batch of Q-values.
+		The batch_index just selects each group of Q-values and action_batch
+		selects the action we took in each group of Q-values.
+		We use batch_index here instead of batch because order no longer
+		matters after passing through the network. Ex.) a batch of [22,74,3,43]
+		would select those respective states from the state memory, and pass them through
+		the network, but after they are passed though we are indexing based on the size of
+		the batch, not the replay buffer.
+		'''
 		q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
 		q_next = self.Q_next.forward(new_state_batch).max(dim=1)[0]
+		terminal_batch = torch.tensor(np.full(32, True)).to(self.Q_eval.device)
+		# if and index of the batch is done (True), then set next reward to 0
 		q_next[terminal_batch] = 0.0
 		q_target = reward_batch + self.gamma * q_next
 		loss = self.Q_eval.loss(q_target, q_eval).to(self.Q_eval.device)
@@ -197,8 +235,8 @@ def save_observation(observation, observations):
 
 def train(agent, env):
     action_space = env.action_space.names
-    env.observation_space = "InstCountNorm"
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
+    env.observation_space = FLAGS.observation
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
     history = []
 
     for i in range(1, FLAGS.episodes + 1):
@@ -211,7 +249,9 @@ def train(agent, env):
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.stagnant_value:
 	        action = agent.choose_action(observation)
-	        new_observation, reward, done, info = env.step(action)
+	        flag = FLAGS.actions[action]
+    		# translate to global action number via global index of flag
+	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	        actions_taken += 1
 	        total += reward
 	        if reward == 0:
@@ -222,7 +262,7 @@ def train(agent, env):
 	        agent.learn()
 	        observation = new_observation
 	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
-	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + str(action_space[action]))
+	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 
 	    history.append(total)
 	    print("Average total %.2f"%np.mean(history[-100:]))
