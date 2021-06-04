@@ -31,7 +31,7 @@ flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
 flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
-flags.DEFINE_integer("replace", 5000, "The number of iterations to run before replacing target network")
+flags.DEFINE_integer("replace", 10000, "The number of iterations to run before replacing target network")
 flags.DEFINE_integer("fc1_dim", 256, "The dimension of the first fully connected layer")
 flags.DEFINE_integer("fc2_dim", 256, "The dimension of the second fully connected layer")
 flags.DEFINE_integer("fc3_dim", 256, "The dimension of the third fully connected layer")
@@ -86,7 +86,7 @@ class DQN(nn.Module):
 		self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
 		self.fc5 = nn.Linear(self.fc4_dims, self.n_actions)
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
-		self.loss = nn.MSELoss()
+		self.loss = nn.SmoothL1Loss() # try huber loss
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 		self.to(self.device)
 
@@ -152,7 +152,6 @@ class Agent(nn.Module):
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = -1
 
@@ -229,7 +228,7 @@ def save_observation(observation, observations):
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = FLAGS.observation
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 10))
     history = []
     for i in range(1, FLAGS.episodes + 1):
 	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
