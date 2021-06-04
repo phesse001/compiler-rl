@@ -152,10 +152,10 @@ class Agent(nn.Module):
 			actions = self.Q_eval.forward(state)
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
-			
+
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = -1
-			
+
 			action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
@@ -191,7 +191,7 @@ class Agent(nn.Module):
 		reward_batch = torch.tensor(self.reward_mem[batch]).to(self.Q_eval.device)
 		terminal_batch = torch.tensor(self.terminal_mem[batch]).to(self.Q_eval.device)
 		action_batch = self.action_mem[batch]
-		''' 
+		'''
 		calling forward with a batch of states gives us a batch of Q-values.
 		The batch_index just selects each group of Q-values and action_batch
 		selects the action we took in each group of Q-values.
@@ -229,9 +229,8 @@ def save_observation(observation, observations):
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = FLAGS.observation
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
+    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 1000))
     history = []
-
     for i in range(1, FLAGS.episodes + 1):
 	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
 	    print(env.benchmark)
@@ -242,10 +241,13 @@ def train(agent, env):
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.stagnant_value:
 	        action = agent.choose_action(observation)
+	        actions_taken += 1
+    		# every n (10) steps, make all actions takable again
+	        if actions_taken % 10 == 0:
+	            agent.actions_taken = []
 	        flag = FLAGS.actions[action]
     		# translate to global action number via global index of flag
 	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
-	        actions_taken += 1
 	        total += reward
 	        if reward == 0:
 	            change_count += 1
@@ -258,7 +260,7 @@ def train(agent, env):
 	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 
 	    history.append(total)
-	    print("Average total %.2f"%np.mean(history[-100:]))
+	    print("Average sum of rewards is " + str(np.mean(history)))
 
 def rollout(agent, env):
 	observation = env.reset()
