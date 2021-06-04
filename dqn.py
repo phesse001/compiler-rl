@@ -72,7 +72,7 @@ FLAGS(sys.argv)
 # The Network
 
 class DQN(nn.Module):
-	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, fc4_dims, fc5_dims, fc6_dims, n_actions):
+	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, fc4_dims, n_actions):
 		super(DQN,self).__init__()
 		self.input_dims = input_dims
 		self.fc1_dims = fc1_dims
@@ -119,9 +119,9 @@ class Agent(nn.Module):
 		# keep track of position of first available memory
 		self.mem_cntr = 0
 		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, fc5_dims=self.n_actions)
+						fc4_dims=FLAGS.fc4_dim, n_actions=self.n_actions)
 		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, fc5_dims=self.n_actions)
+						fc4_dims=FLAGS.fc4_dim, n_actions=self.n_actions)
 		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
