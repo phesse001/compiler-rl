@@ -241,13 +241,13 @@ def train(agent, env):
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.stagnant_value:
 	        action = agent.choose_action(observation)
+	        flag = FLAGS.actions[action]
+    		# translate to global action number via global index of flag
+	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	        actions_taken += 1
     		# every n (10) steps, make all actions takable again
 	        if actions_taken % 10 == 0:
 	            agent.actions_taken = []
-	        flag = FLAGS.actions[action]
-    		# translate to global action number via global index of flag
-	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	        total += reward
 	        if reward == 0:
 	            change_count += 1
