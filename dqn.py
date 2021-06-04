@@ -260,7 +260,7 @@ def train(agent, env):
 	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 
 	    history.append(total)
-	    print("Average sum of rewards is " + str(np.mean(history)))
+	    print("Average sum of rewards is " + str(np.mean(history[-100:])))
 
 def rollout(agent, env):
 	observation = env.reset()
