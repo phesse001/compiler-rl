@@ -24,24 +24,18 @@ import matplotlib.pyplot as plt
 
 # Flags
 
-flags.DEFINE_float("gamma", 0.99, "The percent of how often the actor stays on policy.")
+flags.DEFINE_float("gamma", 0.90, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
-flags.DEFINE_float("epsilon_end", 0.02, "The ending value for epsilon.")
+flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
 flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
 flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
-flags.DEFINE_integer("replace", 10000, "The number of iterations to run before replacing target network")
-flags.DEFINE_integer("fc1_dim", 256, "The dimension of the first fully connected layer")
-flags.DEFINE_integer("fc2_dim", 256, "The dimension of the second fully connected layer")
-flags.DEFINE_integer("fc3_dim", 256, "The dimension of the third fully connected layer")
-flags.DEFINE_integer("fc4_dim", 256, "The dimension of the fourth fully connected layer")
-flags.DEFINE_integer("fc5_dim", 256, "The dimension of the fifth fully connected layer")
-flags.DEFINE_integer("fc6_dim", 256, "The dimension of the sixth fully connected layer")
+flags.DEFINE_integer("replace", 500, "The number of iterations to run before replacing target network")
+flags.DEFINE_integer("fc_dim", 512, "The dimension of a fully connected layer")
 flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
-flags.DEFINE_integer("episode_length", 40, "The (MAX) number of transformation passes per episode")
-flags.DEFINE_integer("stagnant_value", 5, "The (MAX) number of times to apply a series of transformations without observable change")
-flags.DEFINE_string("observation", "InstCountNorm", "The observation vector to use as input to the DQN")
+flags.DEFINE_integer("episode_length", 12, "The (MAX) number of transformation passes per episode")
+flags.DEFINE_integer("patience", 3, "The (MAX) number of times to apply a series of transformations without observable change")
 flags.DEFINE_list(
     "actions",
     [
@@ -118,10 +112,10 @@ class Agent(nn.Module):
 		self.batch_size = FLAGS.batch_size
 		# keep track of position of first available memory
 		self.mem_cntr = 0
-		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, n_actions=self.n_actions)
-		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc1_dim, fc2_dims=FLAGS.fc2_dim, fc3_dims=FLAGS.fc3_dim,
-						fc4_dims=FLAGS.fc4_dim, n_actions=self.n_actions)
+		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc_dim, fc2_dims=FLAGS.fc_dim, fc3_dims=FLAGS.fc_dim,
+						fc4_dims=FLAGS.fc_dim, n_actions=self.n_actions)
+		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc_dim, fc2_dims=FLAGS.fc_dim, fc3_dims=FLAGS.fc_dim,
+						fc4_dims=FLAGS.fc_dim, n_actions=self.n_actions)
 		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
@@ -153,7 +147,7 @@ class Agent(nn.Module):
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
 			while torch.argmax(actions).item() in self.actions_taken:
-				actions[0][torch.argmax(actions).item()] = -1
+				actions[0][torch.argmax(actions).item()] = 0.0
 
 			action = torch.argmax(actions).item()
 
@@ -172,7 +166,7 @@ class Agent(nn.Module):
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < self.batch_size:
+		if self.mem_cntr < 10000:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
@@ -227,8 +221,8 @@ def save_observation(observation, observations):
 
 def train(agent, env):
     action_space = env.action_space.names
-    env.observation_space = FLAGS.observation
-    train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 10))
+    env.observation_space = "InstCountNorm"
+    train_benchmarks = list(env.datasets["benchmark://cbench-v1"].benchmarks())
     history = []
     for i in range(1, FLAGS.episodes + 1):
 	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
@@ -238,15 +232,13 @@ def train(agent, env):
 	    actions_taken = 0
 	    agent.actions_taken = []
 	    change_count = 0
-	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.stagnant_value:
+	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
 	        action = agent.choose_action(observation)
 	        flag = FLAGS.actions[action]
-    		# translate to global action number via global index of flag
+	        # translate to global action number via global index of flag
 	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	        actions_taken += 1
     		# every n (10) steps, make all actions takable again
-	        if actions_taken % 10 == 0:
-	            agent.actions_taken = []
 	        total += reward
 	        if reward == 0:
 	            change_count += 1
@@ -269,13 +261,16 @@ def rollout(agent, env):
 	change_count = 0
 	for i in range(FLAGS.episode_length):
 	    action = agent.choose_action(observation)
+	    flag = FLAGS.actions[action]
 	    action_seq.append(action)
-	    observation, reward, done, info = env.step(action)
+	    observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	    rewards.append(reward)
 	    if reward == 0:
 	        change_count += 1
 	    else:
 	        change_count = 0
 
-	    if done == True or change_count > FLAGS.stagnant_value:
+	    if done == True or change_count > FLAGS.patience:
 	    	break
+
+	return sum(rewards)
