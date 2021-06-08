@@ -2,12 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import math
 import numpy as np
 from absl import flags
-from itertools import islice
 import sys
 import matplotlib.pyplot as plt
+import random
 
 # Start implementing ideas from Deep RL Bootcamp series on youtube
 
@@ -27,15 +26,16 @@ import matplotlib.pyplot as plt
 flags.DEFINE_float("gamma", 0.90, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
 flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
-flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
+flags.DEFINE_float("epsilon_dec", 5e-6, "The decrement value for epsilon.")
 flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
 flags.DEFINE_integer("replace", 500, "The number of iterations to run before replacing target network")
 flags.DEFINE_integer("fc_dim", 512, "The dimension of a fully connected layer")
-flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
+flags.DEFINE_integer("episodes", 10000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 12, "The (MAX) number of transformation passes per episode")
 flags.DEFINE_integer("patience", 3, "The (MAX) number of times to apply a series of transformations without observable change")
+flags.DEFINE_integer("learn", 32, "The number of fully exploratory episodes to run before starting learning")
 flags.DEFINE_list(
     "actions",
     [
@@ -166,7 +166,7 @@ class Agent(nn.Module):
 
 	def learn(self):
 		# start learning as soon as batch size of memory is filled
-		if self.mem_cntr < 10000:
+		if self.mem_cntr < FLAGS.learn:
 			return
 		# set gradients to zero
 		self.Q_eval.optimizer.zero_grad()
@@ -222,7 +222,10 @@ def save_observation(observation, observations):
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = "InstCountNorm"
-    train_benchmarks = list(env.datasets["benchmark://cbench-v1"].benchmarks())
+	# opencv (right), mibench(down)
+    opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
+    mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
+    train_benchmarks = np.concatenate([opencv, mibench])
     history = []
     for i in range(1, FLAGS.episodes + 1):
 	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
