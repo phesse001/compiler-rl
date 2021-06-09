@@ -7,6 +7,7 @@ from absl import flags
 import sys
 import matplotlib.pyplot as plt
 import random
+import math
 
 # Start implementing ideas from Deep RL Bootcamp series on youtube
 
@@ -26,7 +27,7 @@ import random
 flags.DEFINE_float("gamma", 0.90, "The percent of how often the actor stays on policy.")
 flags.DEFINE_float("epsilon", 1.0, "The starting value for epsilon.")
 flags.DEFINE_float("epsilon_end", 0.05, "The ending value for epsilon.")
-flags.DEFINE_float("epsilon_dec", 5e-6, "The decrement value for epsilon.")
+flags.DEFINE_float("epsilon_dec", 5e-5, "The decrement value for epsilon.")
 flags.DEFINE_float("alpha", 0.001, "The learning rate.")
 flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
@@ -34,7 +35,7 @@ flags.DEFINE_integer("replace", 500, "The number of iterations to run before rep
 flags.DEFINE_integer("fc_dim", 512, "The dimension of a fully connected layer")
 flags.DEFINE_integer("episodes", 10000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 12, "The (MAX) number of transformation passes per episode")
-flags.DEFINE_integer("patience", 3, "The (MAX) number of times to apply a series of transformations without observable change")
+flags.DEFINE_integer("patience", 5, "The (MAX) number of times to apply a series of transformations without observable change")
 flags.DEFINE_integer("learn", 32, "The number of fully exploratory episodes to run before starting learning")
 flags.DEFINE_list(
     "actions",
@@ -66,19 +67,17 @@ FLAGS(sys.argv)
 # The Network
 
 class DQN(nn.Module):
-	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, fc4_dims, n_actions):
+	def __init__(self, ALPHA, input_dims, fc1_dims, fc2_dims, fc3_dims, n_actions):
 		super(DQN,self).__init__()
 		self.input_dims = input_dims
 		self.fc1_dims = fc1_dims
 		self.fc2_dims = fc2_dims
 		self.fc3_dims = fc3_dims
-		self.fc4_dims = fc4_dims
 		self.n_actions = n_actions
 		self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
 		self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
 		self.fc3 = nn.Linear(self.fc2_dims, self.fc3_dims)
-		self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
-		self.fc5 = nn.Linear(self.fc4_dims, self.n_actions)
+		self.fc4 = nn.Linear(self.fc3_dims, self.n_actions)
 		self.optimizer = optim.Adam(self.parameters(), lr = ALPHA)
 		self.loss = nn.SmoothL1Loss() # try huber loss
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -90,8 +89,7 @@ class DQN(nn.Module):
 		x = F.relu(self.fc1(state))
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
-		x = F.relu(self.fc4(x))
-		actions = self.fc5(x)
+		actions = self.fc4(x)
 
 		return actions
 
@@ -113,9 +111,9 @@ class Agent(nn.Module):
 		# keep track of position of first available memory
 		self.mem_cntr = 0
 		self.Q_eval = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc_dim, fc2_dims=FLAGS.fc_dim, fc3_dims=FLAGS.fc_dim,
-						fc4_dims=FLAGS.fc_dim, n_actions=self.n_actions)
+						  n_actions=self.n_actions)
 		self.Q_next = DQN(FLAGS.alpha, input_dims, fc1_dims=FLAGS.fc_dim, fc2_dims=FLAGS.fc_dim, fc3_dims=FLAGS.fc_dim,
-						fc4_dims=FLAGS.fc_dim, n_actions=self.n_actions)
+						  n_actions=self.n_actions)
 		self.actions_taken = []
 		# star unpacks list into positional arguments
 		self.state_mem = np.zeros((self.max_mem_size, *input_dims), dtype=np.float32)
@@ -148,7 +146,7 @@ class Agent(nn.Module):
 			# trying giving negative reward for choosing same action multiple times
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0.0
-
+				
 			action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
@@ -221,14 +219,18 @@ def save_observation(observation, observations):
 
 def train(agent, env):
     action_space = env.action_space.names
-    env.observation_space = "InstCountNorm"
 	# opencv (right), mibench(down)
-    opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
-    mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
-    train_benchmarks = np.concatenate([opencv, mibench])
-    history = []
+    #opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
+    #mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
+    #train_benchmarks = np.concatenate([opencv, mibench])
+    train_benchmarks = list(env.datasets["benchmark://cbench-v1"].benchmarks())
+    history_size = 100
+    mem_cntr = 0
+    history = np.zeros(history_size)
+
     for i in range(1, FLAGS.episodes + 1):
-	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    observation = np.zeros(15)
 	    print(env.benchmark)
 	    done = False
 	    total = 0
@@ -239,21 +241,33 @@ def train(agent, env):
 	        action = agent.choose_action(observation)
 	        # translate to global action number via global index of flag
 	        flag = FLAGS.actions[action]
+	        # translate to global action number via global index of flag
 	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
+	        new_observation = np.copy(observation)
+	        new_observation[action] += 1
+	        new_observation = new_observation/np.linalg.norm(new_observation)
+
 	        actions_taken += 1
 	        total += reward
+
 	        if reward == 0:
 	            change_count += 1
 	        else:
 	            change_count = 0
+
 	        agent.store_transition(action, observation, reward, new_observation, done)
 	        agent.learn()
+
 	        observation = new_observation
+
 	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
 	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 
-	    history.append(total)
-	    print("Average sum of rewards is " + str(np.mean(history[-100:])))
+	    index = mem_cntr % history_size
+	    history[index] = total
+	    mem_cntr +=1
+
+	    print("Average sum of rewards is " + str(np.mean(history)))
 
 def rollout(agent, env):
 	observation = env.reset()

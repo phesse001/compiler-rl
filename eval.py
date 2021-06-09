@@ -11,7 +11,7 @@ def run(env: LlvmEnv) -> None:
 
     agent = Agent(n_actions = 15, input_dims = [69])
 
-    agent.Q_eval.load_state_dict(torch.load("./dqn.pth"))
+    agent.Q_eval.load_state_dict(torch.load("./opencv-mibench_dqn.pth"))
 
     env.observation_space = "InstCountNorm"
     rollout(agent, env)

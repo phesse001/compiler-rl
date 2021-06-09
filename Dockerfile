@@ -17,6 +17,6 @@ RUN pip3 install --upgrade pip && \
 
 RUN mkdir -p /compiler_gym
 
-RUN git clone --single-branch --branch leaderboard https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
+RUN git clone --single-branch --branch action_history https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
 
 WORKDIR /compiler_gym
