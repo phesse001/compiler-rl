@@ -254,8 +254,7 @@ def train(agent, env):
 	        observation = new_observation
 
 	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
-	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + env.action_space.flags[action])
-
+	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 	    index = mem_cntr % history_size
 	    history[index] = total
 	    mem_cntr +=1
