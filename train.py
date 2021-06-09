@@ -6,7 +6,7 @@ import torch
 
 if __name__ == "__main__":
     env = gym.make("llvm-ic-v0")
-    agent = Agent(input_dims = [69], n_actions = 15)
+    agent = Agent(input_dims = [69], n_actions = env.action_space.n)
     train(agent, env)
-    PATH = './H15-N5000-INSTCOUNTNORM-cbench.pth'
+    PATH = './H20-N60000-INSTCOUNTNORM-cbench.pth'
     torch.save(agent.Q_eval.state_dict(), PATH)
