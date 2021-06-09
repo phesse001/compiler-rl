@@ -4,7 +4,8 @@ RUN apt-get update && \
     apt-get install -y libtinfo5 && \
     apt-get -y install python3 && \
     apt-get -y install python3-pip && \
-    apt-get -y install git
+    apt-get -y install git && \
+    apt-get -y install sudo
 
 
 RUN pip3 install --upgrade pip && \
@@ -12,7 +13,7 @@ RUN pip3 install --upgrade pip && \
     pip3 install --no-cache-dir compiler_gym &&\
     pip3 install torch torchvision &&\
     pip3 install matplotlib && \
-    pip3 install absl
+    pip3 install absl-py
 
 RUN mkdir -p /compiler_gym
 
