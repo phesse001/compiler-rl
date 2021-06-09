@@ -7,6 +7,7 @@ from absl import flags
 import sys
 import matplotlib.pyplot as plt
 import random
+import math
 
 # Start implementing ideas from Deep RL Bootcamp series on youtube
 
@@ -218,7 +219,6 @@ def save_observation(observation, observations):
 
 def train(agent, env):
     action_space = env.action_space.names
-    env.observation_space = "InstCountNorm"
 	# opencv (right), mibench(down)
     #opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
     #mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
@@ -229,7 +229,8 @@ def train(agent, env):
     history = np.zeros(history_size)
 
     for i in range(1, FLAGS.episodes + 1):
-	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    observation = np.zeros(15)
 	    print(env.benchmark)
 	    done = False
 	    total = 0
@@ -239,8 +240,12 @@ def train(agent, env):
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
 	        action = agent.choose_action(observation)
 	        flag = FLAGS.actions[action]
-	        # translate to global action number via global index of flag
+	        
 	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
+	        new_observation = np.copy(observation)
+	        new_observation[action] += 1
+	        new_observation = new_observation/np.linalg.norm(new_observation)
+
 	        actions_taken += 1
 	        total += reward
 
@@ -251,6 +256,7 @@ def train(agent, env):
 
 	        agent.store_transition(action, observation, reward, new_observation, done)
 	        agent.learn()
+
 	        observation = new_observation
 
 	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
