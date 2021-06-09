@@ -238,9 +238,9 @@ def train(agent, env):
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
 	        action = agent.choose_action(observation)
-	        #flag = FLAGS.actions[action]
+	        flag = FLAGS.actions[action]
 	        # translate to global action number via global index of flag
-	        new_observation, reward, done, info = env.step(action)
+	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	        actions_taken += 1
 	        total += reward
 
