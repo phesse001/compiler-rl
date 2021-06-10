@@ -9,11 +9,9 @@ import torch
 
 def run(env: LlvmEnv) -> None:
 
-    agent = Agent(n_actions = 15, input_dims = [69])
+    agent = Agent(n_actions = 15, input_dims = [15])
 
-    agent.Q_eval.load_state_dict(torch.load("H15-N5000-ACTIONHISTORY-CBENCH.pth"))
-
-    env.observation_space = "InstCountNorm"
+    agent.Q_eval.load_state_dict(torch.load("H10-N4000-ACTIONHISTORY-CBENCH.pth"))
     rollout(agent, env)
 
 if __name__ == "__main__":

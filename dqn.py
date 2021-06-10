@@ -135,6 +135,12 @@ class Agent(nn.Module):
 
 		self.mem_cntr += 1
 
+	def norm(self, x):
+	    max = torch.max(x)
+	    min = torch.min(x)
+	    for i in range(len(x)):
+	       x[i] = (x[i] - min)/(max - min)
+
 	def choose_action(self, observation):
 		if np.random.random() > self.epsilon:
 			# sends observation as tensor to device
@@ -142,11 +148,13 @@ class Agent(nn.Module):
 			observation = observation.astype(np.float32)
 			state = torch.tensor([observation]).to(self.Q_eval.device)
 			actions = self.Q_eval.forward(state)
+			self.norm(actions)
+			
 			# network seems to choose same action over and over, even with zero reward,
 			# trying giving negative reward for choosing same action multiple times
 			while torch.argmax(actions).item() in self.actions_taken:
 				actions[0][torch.argmax(actions).item()] = 0.0
-				
+			
 			action = torch.argmax(actions).item()
 
 			self.actions_taken.append(action)
@@ -156,6 +164,13 @@ class Agent(nn.Module):
 			action = np.random.choice(self.action_space)
 
 		return action
+
+	def get_actions(self, observation):
+	        observation = observation.astype(np.float32)
+	        state = torch.tensor([observation]).to(self.Q_eval.device)
+	        actions = self.Q_eval.forward(state)
+	        self.norm(actions)
+	        return actions
 
 	def replace_target_network(self):
 		if self.learn_step_counter % self.replace_target_cnt == 0:
@@ -230,7 +245,8 @@ def train(agent, env):
 
     for i in range(1, FLAGS.episodes + 1):
 	    env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
-	    observation = np.zeros(15)
+	    global_observation = np.zeros(15)
+	    observation = np.copy(global_observation)
 	    print(env.benchmark)
 	    done = False
 	    total = 0
@@ -239,13 +255,12 @@ def train(agent, env):
 	    change_count = 0
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
 	        action = agent.choose_action(observation)
+	        global_observation[action] += 1
 	        # translate to global action number via global index of flag
 	        flag = FLAGS.actions[action]
-	        # translate to global action number via global index of flag
+	        
 	        new_observation, reward, done, info = env.step(env.action_space.flags.index(flag))
-	        new_observation = np.copy(observation)
-	        new_observation[action] += 1
-	        new_observation = new_observation/np.linalg.norm(new_observation)
+	        new_observation = global_observation/np.linalg.norm(global_observation)
 
 	        actions_taken += 1
 	        total += reward
@@ -270,16 +285,20 @@ def train(agent, env):
 	    print("Average sum of rewards is " + str(np.mean(history)))
 
 def rollout(agent, env):
-	observation = env.reset()
+	env.reset()
+	global_observation = np.zeros(15)
+	observation = np.copy(global_observation)
 	action_seq, rewards = [], []
 	done = False
 	agent.actions_taken = []
 	change_count = 0
 	for i in range(FLAGS.episode_length):
 	    action = agent.choose_action(observation)
+	    global_observation[action] +=1 
 	    flag = FLAGS.actions[action]
 	    action_seq.append(action)
 	    observation, reward, done, info = env.step(env.action_space.flags.index(flag))
+	    observation = global_observation/np.linalg.norm(global_observation)
 	    rewards.append(reward)
 	    if reward == 0:
 	        change_count += 1
