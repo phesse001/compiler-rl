@@ -11,7 +11,7 @@ def run(env: LlvmEnv) -> None:
 
     agent = Agent(n_actions = 15, input_dims = [69])
 
-    agent.Q_eval.load_state_dict(torch.load("./H10-N5000-INSTCOUNTNORM-CBENCH.pth"))
+    agent.Q_eval.load_state_dict(torch.load("./H10-N4000-INSTCOUNTNORM-CBENCH.pth"))
 
     env.observation_space = "InstCountNorm"
     rollout(agent, env)
