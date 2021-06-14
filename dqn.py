@@ -6,6 +6,7 @@ import numpy as np
 from absl import flags
 import sys
 import matplotlib.pyplot as plt
+from itertools import islice
 import random
 
 # Start implementing ideas from Deep RL Bootcamp series on youtube
@@ -32,7 +33,7 @@ flags.DEFINE_integer("batch_size", 32, "The batch size.")
 flags.DEFINE_integer("max_mem_size", 100000, "The maximum memory size.")
 flags.DEFINE_integer("replace", 500, "The number of iterations to run before replacing target network")
 flags.DEFINE_integer("fc_dim", 512, "The dimension of a fully connected layer")
-flags.DEFINE_integer("episodes", 10000, "The number of episodes used to learn")
+flags.DEFINE_integer("episodes", 50000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 12, "The (MAX) number of transformation passes per episode")
 flags.DEFINE_integer("patience", 5, "The (MAX) number of times to apply a series of transformations without observable change")
 flags.DEFINE_integer("learn", 32, "The number of fully exploratory episodes to run before starting learning")
@@ -204,7 +205,7 @@ class Agent(nn.Module):
 		if self.epsilon > self.eps_end:
 		    self.epsilon -= self.eps_dec
 		else:
-			self.epsilon = self.eps_end
+		    self.epsilon = self.eps_end
 
 def save_observation(observation, observations):
     n = 69
@@ -219,11 +220,12 @@ def save_observation(observation, observations):
 def train(agent, env):
     action_space = env.action_space.names
     env.observation_space = "InstCountNorm"
-	# opencv (right), mibench(down)
     #opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
     #mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
     #train_benchmarks = np.concatenate([opencv, mibench])
     train_benchmarks = list(env.datasets["benchmark://cbench-v1"].benchmarks())
+    print(train_benchmarks)
+    #train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
     history_size = 100
     mem_cntr = 0
     history = np.zeros(history_size)
@@ -255,11 +257,15 @@ def train(agent, env):
 
 	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
 	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
+		
 	    index = mem_cntr % history_size
 	    history[index] = total
 	    mem_cntr +=1
 
 	    print("Average sum of rewards is " + str(np.mean(history)))
+
+    PATH = './H10-N4000-INSTCOUNTNORM.pth'
+    torch.save(agent.Q_eval.state_dict(), PATH)
 
 def rollout(agent, env):
 	observation = env.reset()
@@ -282,3 +288,14 @@ def rollout(agent, env):
 	    	break
 
 	return sum(rewards)
+
+# train and rollout function to count in train time
+def train_and_run(agent, env, n):
+	if n == 0:
+	    train(agent, env)
+	    rollout(agent, env)
+	else:
+	    rollout(agent, env)
+	
+
+
