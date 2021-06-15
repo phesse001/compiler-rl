@@ -218,26 +218,21 @@ def save_observation(observation, observations):
     return tmp
 
 def train(agent, env):
-    action_space = env.action_space.names
     env.observation_space = "InstCountNorm"
-    #opencv = random.sample(list(env.datasets["benchmark://opencv-v0"].benchmarks()) , 25)
-    #mibench = random.sample(list(env.datasets["benchmark://mibench-v0"].benchmarks()), 25)
-    #train_benchmarks = np.concatenate([opencv, mibench])
-    train_benchmarks = list(env.datasets["benchmark://cbench-v1"].benchmarks())
-    print(train_benchmarks)
-    #train_benchmarks = list(islice(env.datasets["generator://csmith-v0"].benchmarks(), 100))
+    train_benchmarks = env.datasets["benchmark://cbench-v1"]
     history_size = 100
     mem_cntr = 0
     history = np.zeros(history_size)
 
     for i in range(1, FLAGS.episodes + 1):
-	    observation = env.reset(benchmark = train_benchmarks[np.random.choice(len(train_benchmarks))])
+	    observation = env.reset(benchmark = train_benchmarks.random_benchmark())
 	    print(env.benchmark)
 	    done = False
 	    total = 0
 	    actions_taken = 0
 	    agent.actions_taken = []
 	    change_count = 0
+	   
 	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
 	        action = agent.choose_action(observation)
 	        flag = FLAGS.actions[action]
@@ -273,12 +268,14 @@ def rollout(agent, env):
 	done = False
 	agent.actions_taken = []
 	change_count = 0
+	
 	for i in range(FLAGS.episode_length):
 	    action = agent.choose_action(observation)
 	    flag = FLAGS.actions[action]
 	    action_seq.append(action)
 	    observation, reward, done, info = env.step(env.action_space.flags.index(flag))
 	    rewards.append(reward)
+
 	    if reward == 0:
 	        change_count += 1
 	    else:
@@ -288,14 +285,3 @@ def rollout(agent, env):
 	    	break
 
 	return sum(rewards)
-
-# train and rollout function to count in train time
-def train_and_run(agent, env, n):
-	if n == 0:
-	    train(agent, env)
-	    rollout(agent, env)
-	else:
-	    rollout(agent, env)
-	
-
-
