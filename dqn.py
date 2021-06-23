@@ -35,7 +35,7 @@ flags.DEFINE_integer("replace", 500, "The number of iterations to run before rep
 flags.DEFINE_integer("fc_dim", 512, "The dimension of a fully connected layer")
 flags.DEFINE_integer("episodes", 100000, "The number of episodes used to learn")
 flags.DEFINE_integer("episode_length", 12, "The (MAX) number of transformation passes per episode")
-flags.DEFINE_integer("patience", 3, "The (MAX) number of times to apply a series of transformations without observable change")
+flags.DEFINE_integer("patience", 4, "The (MAX) number of times to apply a series of transformations without observable change")
 flags.DEFINE_list(
     "actions",
     [
