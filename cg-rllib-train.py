@@ -1,6 +1,7 @@
 import compiler_gym
 import ray
 from ray import tune
+import ray.rllib.agents.ppo as ppo
 from ray.rllib.agents.ppo import PPOTrainer
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks
 import numpy as np
@@ -10,6 +11,7 @@ from itertools import cycle
 
 # define a make_env() helper function to make environement.
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
+
 
 
 def make_env(*args) -> compiler_gym.envs.CompilerEnv:
@@ -43,53 +45,49 @@ with make_env() as env:
     cbench = env.datasets['cbench-v1']
     train_benchmarks = list(cbench.benchmarks())
     rng = np.random.default_rng()
-    #train_benchmarks = (rng.choice(train_benchmarks) for _ in iter(int,1))
+    train_benchmarks = (rng.choice(train_benchmarks) for _ in iter(int,1))
     test_benchmarks = list(cbench.benchmarks())
  
 
-with make_env() as env:
-    cbench = env.datasets["cbench-v1"]
-    #anghabench = env.datasets["anghabench-v1"]
-    #train_benchmarks = list(islice(anghabnech.benchmarks(), 1000))
-    #train_benchmarks, test_benchmarks, val_benchmarks = train_benchmarks[:700], train_benchmarks[700:850], train_benchmarks[850:]
-    train_benchmarks = list(cbench.benchmarks())
-    test_benchmarks = list(cbench.benchmarks())
-    # from src code of RandomOrderBenchmarks
-    rng = np.random.default_rng()
-    #train_benchmarks = (rng.choice(train_benchmarks) for _ in iter(int,1))
-'''
 '''
 # register environment with rllib
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
     del args # unused env_config passed by ray
     return RandomOrderBenchmarks(make_env(), train_benchmarks)
+'''
 
-
-tune.register_env("compiler_gym", make_training_env)
+tune.register_env("compiler_gym", make_env)
 
 if ray.is_initialized():
     ray.shutdown()
 ray.init(include_dashboard=False, ignore_reinit_error=True)
 
+config = ppo.DEFAULT_CONFIG.copy()
+
+# edit default config
+config['num_workers'] = 18
+config['rollout_fragment_length'] = 10
+config['train_batch_size'] = 100
+config['sgd_minibatch_size'] = 100
+config['gamma'] = 0.90
+config['horizon'] = 100
+config['framework'] = 'torch'
+config['num_gpus'] = 1
+config['num_gpus_per_worker'] = 0.05
+config['env'] = 'compiler_gym'
+
+config['model']['fcnet_activation'] = 'relu'
+config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
+
+print(config)
+
 analysis = tune.run(
     PPOTrainer,
     checkpoint_at_end=True,
     stop={
-        "episodes_total": 500,
+        "episodes_total": 10000,
     },
-    config={
-        "framework": "tf",
-        "seed": None,
-        "num_workers": 4,
-        # Specify the environment to use, where "compiler_gym" is the name we 
-        # passed to tune.register_env().
-        "env": "compiler_gym",
-        # Reduce the size of the batch/trajectory lengths to match our short 
-        # training run.
-        "rollout_fragment_length": 5,
-        "train_batch_size": 5,
-        "sgd_minibatch_size": 5,
-    }
+    config=config
 )
 
 # evaluation
@@ -97,7 +95,7 @@ analysis = tune.run(
 agent = PPOTrainer(
     env = "compiler_gym",
     config={
-        "num_workers" : 4,
+        "num_workers" : 18,
         "explore": False
     }
 )
@@ -122,7 +120,6 @@ def run_agent_on_benchmarks(benchmarks):
         while not done:
             action = agent.compute_action(observation)
             observation, _, done, _ = env.step(action)
-            print(observation)
         rewards.append(env.episode_reward)
         print(f"[{i}/{len(benchmarks)}] {env.state}")
 
