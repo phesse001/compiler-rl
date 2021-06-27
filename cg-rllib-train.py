@@ -13,12 +13,12 @@ from itertools import cycle
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
 
-
 def make_env(*args) -> compiler_gym.envs.CompilerEnv:
     del args # unused arg passed by ray
 
     env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
     
+    '''
     env = ConstrainedCommandline(env, flags=[
         "-break-crit-edges",
         "-early-cse-memssa",
@@ -37,7 +37,7 @@ def make_env(*args) -> compiler_gym.envs.CompilerEnv:
         "-sroa",
     ])
     env = TimeLimit(env, max_episode_steps=5)
-
+    '''
     return env
 
 # create benchmarks to be used
@@ -65,15 +65,13 @@ ray.init(include_dashboard=False, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 18
+config['num_workers'] = 38
 config['rollout_fragment_length'] = 10
 config['train_batch_size'] = 100
-config['sgd_minibatch_size'] = 100
+config['sgd_minibatch_size'] = 40
 config['gamma'] = 0.90
-config['horizon'] = 100
+config['horizon'] = 40
 config['framework'] = 'torch'
-config['num_gpus'] = 1
-config['num_gpus_per_worker'] = 0.05
 config['env'] = 'compiler_gym'
 
 config['model']['fcnet_activation'] = 'relu'
@@ -95,7 +93,7 @@ analysis = tune.run(
 agent = PPOTrainer(
     env = "compiler_gym",
     config={
-        "num_workers" : 18,
+        "num_workers" : 38,
         "explore": False
     }
 )
