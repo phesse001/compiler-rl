@@ -3,6 +3,8 @@ import ray
 from ray import tune
 import ray.rllib.agents.ppo as ppo
 from ray.rllib.agents.ppo import PPOTrainer
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.preprocessors import Preprocessor
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks
 import numpy as np
 from itertools import cycle
@@ -47,6 +49,15 @@ with make_env() as env:
     rng = np.random.default_rng()
     train_benchmarks = (rng.choice(train_benchmarks) for _ in iter(int,1))
     test_benchmarks = list(cbench.benchmarks())
+
+
+with make_env() as env:
+    env.reset()
+    print(env.benchmark)
+    env.reset()
+    print(env.benchmark)
+    env.reset()
+    print(env.benchmark)
  
 
 '''
