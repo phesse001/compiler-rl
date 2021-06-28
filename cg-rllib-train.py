@@ -6,12 +6,7 @@ from ray import tune
 import ray.rllib.agents.ppo as ppo
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.models import ModelCatalog
-<<<<<<< HEAD
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks, ObservationWrapper
-=======
-from ray.rllib.models.preprocessors import Preprocessor
-from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks
->>>>>>> b2d0af4c33acc6575d22d7659cfa20f2064acd05
 import numpy as np
 from itertools import cycle
 
@@ -21,37 +16,9 @@ from itertools import cycle
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
 
-<<<<<<< HEAD
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
     env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-=======
-def make_env(*args) -> compiler_gym.envs.CompilerEnv:
-    del args # unused arg passed by ray
-
-    env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-    
-    '''
-    env = ConstrainedCommandline(env, flags=[
-        "-break-crit-edges",
-        "-early-cse-memssa",
-        "-gvn-hoist",
-        "-gvn",
-        "-instcombine",
-        "-instsimplify",
-        "-jump-threading",
-        "-loop-reduce",
-        "-loop-rotate",
-        "-loop-versioning",
-        "-mem2reg",
-        "-newgvn",
-        "-reg2mem",
-        "-simplifycfg",
-        "-sroa",
-    ])
-    env = TimeLimit(env, max_episode_steps=5)
-    '''
->>>>>>> b2d0af4c33acc6575d22d7659cfa20f2064acd05
     return env
 
 # create benchmarks to be used
@@ -60,19 +27,6 @@ with make_env() as env:
     gh = env.datasets['github-v0']
     train_benchmarks = list(gh.benchmarks())
     test_benchmarks = list(cbench.benchmarks())
-<<<<<<< HEAD
-=======
-
-
-with make_env() as env:
-    env.reset()
-    print(env.benchmark)
-    env.reset()
-    print(env.benchmark)
-    env.reset()
-    print(env.benchmark)
- 
->>>>>>> b2d0af4c33acc6575d22d7659cfa20f2064acd05
 
 def custom_observation(observation):
     return 1
