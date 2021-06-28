@@ -1,9 +1,12 @@
 import compiler_gym
+import gym
+from gym import spaces
 import ray
 from ray import tune
 import ray.rllib.agents.ppo as ppo
 from ray.rllib.agents.ppo import PPOTrainer
-from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks
+from ray.rllib.models import ModelCatalog
+from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks, ObservationWrapper
 import numpy as np
 from itertools import cycle
 
@@ -14,49 +17,40 @@ from itertools import cycle
 
 
 
-def make_env(*args) -> compiler_gym.envs.CompilerEnv:
-    del args # unused arg passed by ray
-
+def make_env() -> compiler_gym.envs.CompilerEnv:
     env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-    
-    env = ConstrainedCommandline(env, flags=[
-        "-break-crit-edges",
-        "-early-cse-memssa",
-        "-gvn-hoist",
-        "-gvn",
-        "-instcombine",
-        "-instsimplify",
-        "-jump-threading",
-        "-loop-reduce",
-        "-loop-rotate",
-        "-loop-versioning",
-        "-mem2reg",
-        "-newgvn",
-        "-reg2mem",
-        "-simplifycfg",
-        "-sroa",
-    ])
-    env = TimeLimit(env, max_episode_steps=5)
-
     return env
 
 # create benchmarks to be used
 with make_env() as env:
     cbench = env.datasets['cbench-v1']
-    train_benchmarks = list(cbench.benchmarks())
-    rng = np.random.default_rng()
-    train_benchmarks = (rng.choice(train_benchmarks) for _ in iter(int,1))
+    gh = env.datasets['github-v0']
+    train_benchmarks = list(gh.benchmarks())
     test_benchmarks = list(cbench.benchmarks())
- 
 
-'''
-# register environment with rllib
+def custom_observation(observation):
+    return 1
+
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
-    del args # unused env_config passed by ray
+    del args
     return RandomOrderBenchmarks(make_env(), train_benchmarks)
-'''
 
-tune.register_env("compiler_gym", make_env)
+# make sure random benchmarks are selected
+with make_training_env() as env:
+    # todo add observation wrapper
+    '''
+    env = ObservationWrapper(env)
+    env.observation = custom_observation
+    '''
+    state = env.reset()
+    print(state)
+    print(env.benchmark)
+    env.reset()
+    print(env.benchmark)
+    env.reset()
+    print(env.benchmark)
+
+tune.register_env("compiler_gym", make_training_env)
 
 if ray.is_initialized():
     ray.shutdown()
@@ -65,27 +59,23 @@ ray.init(include_dashboard=False, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 18
+config['num_workers'] = 39
 config['rollout_fragment_length'] = 10
-config['train_batch_size'] = 100
-config['sgd_minibatch_size'] = 100
+config['train_batch_size'] = 390
+config['sgd_minibatch_size'] = 390
 config['gamma'] = 0.90
 config['horizon'] = 100
 config['framework'] = 'torch'
-config['num_gpus'] = 1
-config['num_gpus_per_worker'] = 0.05
 config['env'] = 'compiler_gym'
 
 config['model']['fcnet_activation'] = 'relu'
 config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 
-print(config)
-
 analysis = tune.run(
     PPOTrainer,
     checkpoint_at_end=True,
     stop={
-        "episodes_total": 10000,
+        "episodes_total": 100000,
     },
     config=config
 )
@@ -95,7 +85,7 @@ analysis = tune.run(
 agent = PPOTrainer(
     env = "compiler_gym",
     config={
-        "num_workers" : 18,
+        "num_workers" : 39,
         "explore": False
     }
 )

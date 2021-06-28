@@ -218,7 +218,8 @@ def save_observation(observation, observations):
     return tmp
 
 def train(agent, env):
-    env.observation_space = "InstCountNorm"
+    env.observation_space = "Autophase"
+    print(env.observation_space)
     train_benchmarks = env.datasets["benchmark://cbench-v1"]
     history_size = 100
     mem_cntr = 0
