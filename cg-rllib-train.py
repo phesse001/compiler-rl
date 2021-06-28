@@ -5,6 +5,7 @@ import ray
 from ray import tune
 import ray.rllib.agents.ppo as ppo
 from ray.rllib.agents.ppo import PPOTrainer
+from ray.tune.logger import Logger
 from ray.rllib.models import ModelCatalog
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks, ObservationWrapper
 import numpy as np
@@ -15,8 +16,6 @@ from itertools import cycle
 # define a make_env() helper function to make environement.
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
-
-
 def make_env() -> compiler_gym.envs.CompilerEnv:
     env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
     return env
@@ -25,7 +24,7 @@ def make_env() -> compiler_gym.envs.CompilerEnv:
 with make_env() as env:
     cbench = env.datasets['cbench-v1']
     gh = env.datasets['github-v0']
-    train_benchmarks = list(gh.benchmarks())
+    train_benchmarks = list(cbench.benchmark_uris())
     test_benchmarks = list(cbench.benchmarks())
 
 def custom_observation(observation):
