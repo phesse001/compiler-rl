@@ -73,7 +73,6 @@ config['rollout_fragment_length'] = 10
 config['train_batch_size'] = 100
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 10
-config['num_sgd_itr'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
 config['horizon'] = 40
