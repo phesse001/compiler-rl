@@ -9,7 +9,9 @@ from ray.tune.logger import Logger
 from ray.rllib.models import ModelCatalog
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks, ObservationWrapper
 import numpy as np
-from itertools import cycle
+import random
+import itertools
+from itertools import cycle, islice 
 
 # code based off of example RLlib implementation of compiler_gym environment -> https://github.com/facebookresearch/CompilerGym/blob/development/examples/rllib.ipynb
 
@@ -22,13 +24,18 @@ def make_env() -> compiler_gym.envs.CompilerEnv:
 
 # create benchmarks to be used
 with make_env() as env:
-    cbench = env.datasets['cbench-v1']
-    gh = env.datasets['github-v0']
-    train_benchmarks = list(cbench.benchmark_uris())
-    test_benchmarks = list(cbench.benchmarks())
-
-def custom_observation(observation):
-    return 1
+    # grab ~100 benchmarks for training from different datasets
+    cbench = list(env.datasets['cbench-v1'].benchmark_uris())
+    gh = list(env.datasets['github-v0'].benchmark_uris())
+    gh = random.sample(gh, 25)
+    linux = list(env.datasets['linux-v0'].benchmark_uris())
+    linux = random.sample(linux, 25)
+    blas = list(env.datasets['blas-v0'].benchmark_uris())
+    blas = random.sample(blas, 25)
+    # use cbench for testing
+    csmith = list(islice(env.datasets['generator://csmith-v0'].benchmark_uris(), 25))
+    train_benchmarks = cbench + gh + linux + blas
+    test_benchmarks = csmith
 
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
     del args
@@ -53,16 +60,19 @@ tune.register_env("compiler_gym", make_training_env)
 
 if ray.is_initialized():
     ray.shutdown()
-ray.init(include_dashboard=False, ignore_reinit_error=True)
+ray.init(include_dashboard=True, ignore_reinit_error=True)
 
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 39
-config['rollout_fragment_length'] = 10
-config['train_batch_size'] = 390
-config['sgd_minibatch_size'] = 390
-config['gamma'] = 0.90
+config['num_workers'] = 8
+config['num_gpus'] = 1
+config['rollout_fragment_length'] = 100
+config['train_batch_size'] = 100
+config['sgd_minibatch_size'] = 256
+config['num_sgd_itr'] = 20
+config['lr'] = 0.0001
+config['gamma'] = 0.995
 config['horizon'] = 40
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
@@ -84,7 +94,7 @@ analysis = tune.run(
 agent = PPOTrainer(
     env = "compiler_gym",
     config={
-        "num_workers" : 39,
+        "num_workers" : 8,
         "explore": False
     }
 )
