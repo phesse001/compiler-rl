@@ -67,9 +67,12 @@ config = ppo.DEFAULT_CONFIG.copy()
 # edit default config
 config['num_workers'] = 8
 config['num_gpus'] = 1
-config['rollout_fragment_length'] = 100
+# this splits a rollout into an episode fragment of size 10
+config['rollout_fragment_length'] = 10
+# this will combine fragements into a batch to perform sgd
 config['train_batch_size'] = 100
-config['sgd_minibatch_size'] = 256
+# number of points to randomly select for GD
+config['sgd_minibatch_size'] = 10
 config['num_sgd_itr'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
