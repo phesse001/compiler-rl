@@ -84,21 +84,21 @@ config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 
 analysis = tune.run(
     PPOTrainer,
+    checkpoint_dir = '.' # checkpoint in current directory
+    checkpoint_freq = 10000
     checkpoint_at_end=True,
     stop={
-        "episodes_total": 100000,
+        "episodes_total": 200000,
     },
     config=config
 )
 
 # evaluation
+config['explore'] = False
 
 agent = PPOTrainer(
     env = "compiler_gym",
-    config={
-        "num_workers" : 8,
-        "explore": False
-    }
+    config = config
 )
 
 checkpoint = analysis.get_best_checkpoint(
