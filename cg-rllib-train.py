@@ -91,6 +91,8 @@ analysis = tune.run(
     },
     config=config
 )
+# save torch model cuz idk if I will be able to use checkpoint outside of script
+torch.save(PPOTrainer.get_policy().model, "./rllib-compiler-gym.pth")
 
 # evaluation
 config['explore'] = False
