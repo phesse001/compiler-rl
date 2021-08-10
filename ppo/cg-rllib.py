@@ -50,17 +50,17 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 8
+config['num_workers'] = 72
 config['num_gpus'] = 1
-# this splits a rollout into an episode fragment of size 10
-config['rollout_fragment_length'] = 80
+# this splits a rollout into an episode fragment of size n
+config['rollout_fragment_length'] = 200
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 640
+config['train_batch_size'] = 14400
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
-config['horizon'] = 80
+config['horizon'] = 200
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
 
@@ -114,6 +114,6 @@ def test(agent):
 # start training
 
 save_dir = './log_dir'
-agent_path,anaysis_obj = train(stop={"episodes_total":200000}, save_dir)
+agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
 test_agent = load(agent_path)
 cumulative_reward = test(test_agent)
