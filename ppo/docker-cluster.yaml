@@ -1,0 +1,54 @@
+cluster_name: docker-ray-cluster 
+
+docker:
+     #image: "rayproject/ray-ml:latest-gpu" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
+     #image: phesse001/ray-container:latest-cpu  # use this one if you don't need ML dependencies, it's faster to pull
+     image: "rayproject/ray-ml:latest-gpu" 
+    
+     container_name: "ray-cluster"
+     # If true, pulls latest version of image. Otherwise, `docker run` will only pull the image
+     # if no cached version is present.
+     pull_before_run: True
+     run_options: ["--shm-size=50gb"]  # Extra options to pass into "docker run"
+
+provider:
+    type: local
+    head_ip: 10.6.7.3
+    worker_ips: [10.6.7.1, 10.6.7.5, 10.6.7.8, 10.6.7.7]
+    
+auth:
+    ssh_user: phesse001
+    # Optional if an ssh private key is necessary to ssh to the cluster.
+    ssh_private_key: ~/.ssh/id_rsa
+
+min_workers: 4
+
+max_workers: 4
+
+upscaling_speed: 1.0
+
+idle_timeout_minutes: 5
+
+cluster_synced_files: []
+
+setup_commands: []
+
+# Whether changes to directories in file_mounts or cluster_synced_files in the head node
+# should sync to the worker node continuously
+file_mounts_sync_continuously: False
+
+# Patterns for files to exclude when running rsync up or rsync down
+rsync_exclude:
+    - "**/.git"
+    - "**/.git/**"
+
+rsync_filter:
+    - ".gitignore"
+
+head_start_ray_commands:
+    - ray stop
+    - ulimit -n 65536; ray start --head --port=6379 --object-manager-port=8076 --autoscaling-config=~/ray_bootstrap_config.yaml --object-store-memory=1000000000 
+
+worker_start_ray_commands:
+    - ray stop
+    - ulimit -n 65536; ray start --address=$RAY_HEAD_IP:6379 --object-manager-port=8076 --object-store-memory=1000000000
