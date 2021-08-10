@@ -53,14 +53,14 @@ config = ppo.DEFAULT_CONFIG.copy()
 config['num_workers'] = 8
 config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size 10
-config['rollout_fragment_length'] = 40
+config['rollout_fragment_length'] = 80
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 320
+config['train_batch_size'] = 640
 # number of points to randomly select for GD
-config['sgd_minibatch_size'] = 10
+config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
-config['horizon'] = 40
+config['horizon'] = 80
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
 
@@ -68,7 +68,7 @@ config['model']['fcnet_activation'] = 'relu'
 config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 
 # train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
-def train(stop_criteria):
+def train(stop_criteria, save_dir):
 
     """
     Train an RLlib PPO agent using tune until any of the configured stopping criteria is met.
@@ -113,6 +113,7 @@ def test(agent):
 
 # start training
 
-agent_path,anaysis_obj = train(stop={"episodes_total":"200000"})
+save_dir = './log_dir'
+agent_path,anaysis_obj = train(stop={"episodes_total":200000}, save_dir)
 test_agent = load(agent_path)
 cumulative_reward = test(test_agent)
