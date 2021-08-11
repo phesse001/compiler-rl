@@ -68,7 +68,7 @@ config['model']['fcnet_activation'] = 'relu'
 config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 
 # train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
-def train(stop_criteria):
+def train(stop_criteria, save_dir):
 
     """
     Train an RLlib PPO agent using tune until any of the configured stopping criteria is met.
@@ -113,6 +113,7 @@ def test(agent):
 
 # start training
 
-agent_path,anaysis_obj = train(stop={"episodes_total":"200000"})
+save_dir = './log_dir'
+agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
 test_agent = load(agent_path)
 cumulative_reward = test(test_agent)
