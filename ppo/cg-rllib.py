@@ -18,8 +18,28 @@ from itertools import cycle, islice
 # define a make_env() helper function to make environement.
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
+# try making wrapper to use done logic
+class envWrapper(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.env = env
+        self.patience = 10
+        self.reward_counter = 0
+
+    def step(self, action):
+        next_state, reward, done, info = self.env.step(action)
+        if reward <= 0:
+            self.reward_counter += 1
+        else:
+            self.reward_counter = 0
+
+        if self.reward_counter > self.patience:
+            done = True
+        return next_state, reward, done, info
+
+
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"))
     return env
 
 # create benchmarks to be used
@@ -50,17 +70,17 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 72
+config['num_workers'] = 40
 config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size n
-config['rollout_fragment_length'] = 200
+config['rollout_fragment_length'] = 20
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 14400
+config['train_batch_size'] = 160
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
-config['horizon'] = 200
+config['horizon'] = 100
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
 
@@ -78,10 +98,11 @@ def train(stop_criteria, save_dir):
         See https://docs.ray.io/en/latest/tune/api_docs/analysis.html#experimentanalysis-tune-experimentanalysis
     """
     analysis = ray.tune.run(ppo.PPOTrainer, config=config, local_dir=save_dir, stop=stop_criteria,
-                            checkpoint_at_end=True)
+                            checkpoint_at_end=True, max_failures=5)
     # list of lists: one list per checkpoint; each checkpoint list contains 1st the path, 2nd the metric value
-    checkpoints = analysis.get_trial_checkpoints_paths(trial=analysis.get_best_trial('episode_reward_mean'),
-                                                       metric='episode_reward_mean')
+    trial = analysis.get_best_trial('episode_reward_mean', 'max', 'all', True)
+    help(trial)
+    checkpoints = analysis.get_trial_checkpoints_paths(trial=trial, metric='episode_reward_mean')
     # retriev the checkpoint path; we only have a single checkpoint, so take the first one
     checkpoint_path = checkpoints[0][0]
     return checkpoint_path, analysis
