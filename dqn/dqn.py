@@ -234,7 +234,7 @@ def train(agent, env):
 	    agent.actions_taken = []
 	    change_count = 0
 	   
-	    while done == False and actions_taken < FLAGS.episode_length and change_count < FLAGS.patience:
+	    while done == False:
 	        action = agent.choose_action(observation)
 	        flag = FLAGS.actions[action]
 	        # translate to global action number via global index of flag
@@ -251,7 +251,7 @@ def train(agent, env):
 	        agent.learn()
 	        observation = new_observation
 
-	        print("Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
+	        print("Reward Counter " + "{:.4f}".format(env.reward_counter) + "Step: " + str(i) + " Episode Total: " + "{:.4f}".format(total) +
 	              " Epsilon: " + "{:.4f}".format(agent.epsilon) + " Action: " + flag)
 		
 	    index = mem_cntr % history_size
