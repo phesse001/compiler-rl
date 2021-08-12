@@ -18,6 +18,6 @@ RUN python3 -m pip install gym && \
 
 RUN mkdir -p /compiler_gym
 
-RUN git clone --single-branch --branch leaderboard https://github.com/phesse001/compiler-gym-dqn.git compiler_gym
+RUN git clone --single-branch --branch leaderboard https://github.com/phesse001/compiler-rl.git compiler-rl
 
-WORKDIR /compiler_gym
+WORKDIR /compiler-rl/ppo
