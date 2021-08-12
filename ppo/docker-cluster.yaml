@@ -3,13 +3,14 @@ cluster_name: docker-ray-cluster
 docker:
      #image: "rayproject/ray-ml:latest-gpu" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
      #image: phesse001/ray-container:latest-cpu  # use this one if you don't need ML dependencies, it's faster to pull
-     image: "rayproject/ray-ml:latest-gpu" 
+     #image: "rayproject/ray:latest-gpu" 
+     image: "phesse001/rllib:latest"
     
      container_name: "ray-cluster"
      # If true, pulls latest version of image. Otherwise, `docker run` will only pull the image
      # if no cached version is present.
      pull_before_run: True
-     run_options: ["--shm-size=50gb"]  # Extra options to pass into "docker run"
+     run_options: []  # Extra options to pass into "docker run"
 
 provider:
     type: local
