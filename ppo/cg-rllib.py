@@ -70,10 +70,10 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 40
+config['num_workers'] = 20
 config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size n
-config['rollout_fragment_length'] = 20
+config['rollout_fragment_length'] = 8 
 # this will combine fragements into a batch to perform sgd
 config['train_batch_size'] = 160
 # number of points to randomly select for GD
@@ -101,7 +101,6 @@ def train(stop_criteria, save_dir):
                             checkpoint_at_end=True, max_failures=5)
     # list of lists: one list per checkpoint; each checkpoint list contains 1st the path, 2nd the metric value
     trial = analysis.get_best_trial('episode_reward_mean', 'max', 'all', True)
-    help(trial)
     checkpoints = analysis.get_trial_checkpoints_paths(trial=trial, metric='episode_reward_mean')
     # retriev the checkpoint path; we only have a single checkpoint, so take the first one
     checkpoint_path = checkpoints[0][0]
