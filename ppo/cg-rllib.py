@@ -73,7 +73,7 @@ config = ppo.DEFAULT_CONFIG.copy()
 config['num_workers'] = 20
 config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size n
-config['rollout_fragment_length'] = 8 
+config['rollout_fragment_length'] = 8
 # this will combine fragements into a batch to perform sgd
 config['train_batch_size'] = 160
 # number of points to randomly select for GD
@@ -87,8 +87,11 @@ config['env'] = 'compiler_gym'
 config['model']['fcnet_activation'] = 'relu'
 config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 
-# train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
+#train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
+
 def train(stop_criteria, save_dir):
+
+
 
     """
     Train an RLlib PPO agent using tune until any of the configured stopping criteria is met.
@@ -102,7 +105,7 @@ def train(stop_criteria, save_dir):
     # list of lists: one list per checkpoint; each checkpoint list contains 1st the path, 2nd the metric value
     trial = analysis.get_best_trial('episode_reward_mean', 'max', 'all', True)
     checkpoints = analysis.get_trial_checkpoints_paths(trial=trial, metric='episode_reward_mean')
-    # retriev the checkpoint path; we only have a single checkpoint, so take the first one
+    # retrieve the checkpoint path; we only have a single checkpoint, so take the first one
     checkpoint_path = checkpoints[0][0]
     return checkpoint_path, analysis
 
@@ -132,8 +135,10 @@ def test(agent):
     return episode_reward
 
 # start training
-
-save_dir = './log_dir'
-agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
-test_agent = load(agent_path)
-cumulative_reward = test(test_agent)
+if __name__ == "__main__":
+    test_agent = load(agent_path)
+    cumulative_reward = test(test_agent)
+    #save_dir = './log_dir'
+    #agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
+    #test_agent = load(agent_path)
+    #cumulative_reward = test(test_agent)
