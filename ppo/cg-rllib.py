@@ -4,8 +4,6 @@ from gym import spaces
 import ray
 from ray import tune
 import ray.rllib.agents.ppo as ppo
-from ray.rllib.agents.ppo import PPOTrainer
-from ray.tune.logger import Logger
 from ray.rllib.models import ModelCatalog
 from compiler_gym.wrappers import ConstrainedCommandline, TimeLimit, CycleOverBenchmarks, RandomOrderBenchmarks, ObservationWrapper
 import numpy as np
