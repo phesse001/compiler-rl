@@ -69,7 +69,8 @@ config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
 config['num_workers'] = 20
-config['num_gpus'] = 1
+# prob with using gpu and torch in rllib...
+#config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size n
 config['rollout_fragment_length'] = 8
 # this will combine fragements into a batch to perform sgd
@@ -99,7 +100,7 @@ def train(stop_criteria, save_dir):
         See https://docs.ray.io/en/latest/tune/api_docs/analysis.html#experimentanalysis-tune-experimentanalysis
     """
     analysis = ray.tune.run(ppo.PPOTrainer, config=config, local_dir=save_dir, stop=stop_criteria,
-                            checkpoint_at_end=True, max_failures=5)
+                            checkpoint_at_end=True)
     # list of lists: one list per checkpoint; each checkpoint list contains 1st the path, 2nd the metric value
     trial = analysis.get_best_trial('episode_reward_mean', 'max', 'all', True)
     checkpoints = analysis.get_trial_checkpoints_paths(trial=trial, metric='episode_reward_mean')
@@ -112,30 +113,36 @@ def load(path):
     Load a trained RLlib agent from the specified path. Call this before testing a trained agent.
     :param path: Path pointing to the agent's saved checkpoint (only used for RLlib agents)
     """
-    agent = ppo.PPOTrainer(config=config, env=make_training_env())
+    agent = ppo.PPOTrainer(config=config, env="compiler_gym")
     agent.restore(path)
     return agent
 
-def test(agent):
+def test(agent, n_episodes):
     """Test trained agent for a single episode. Return the episode reward"""
     # instantiate env class
-    with make_training_env() as env:
+    rewards = []
+    for ep in range(n_episodes):
+        with make_training_env() as env:
 
-      # run until episode ends
-      episode_reward = 0
-      done = False
-      obs = env.reset()
-      while not done:
-          action = agent.compute_action(obs)
-          obs, reward, done, info = env.step(action)
-          episode_reward += reward
+            # run until episode ends
+            episode_reward = 0
+            done = False
+            obs = env.reset()
+            while not done:
+                action = agent.compute_action(obs)
+                obs, reward, done, info = env.step(action)
+                print(f"Action taken {action}, reward given {reward}")
+                episode_reward += reward
+                
+          rewards.append(episode_reward)
 
-    return episode_reward
+     return rewards
 
 # start training
 if __name__ == "__main__":
     test_agent = load(agent_path)
-    cumulative_reward = test(test_agent)
+    cumulative_rewards = test(test_agent, 20)
+    print(cumulative_rewards)
     #save_dir = './log_dir'
     #agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
     #test_agent = load(agent_path)
