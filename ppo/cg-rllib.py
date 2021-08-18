@@ -44,18 +44,9 @@ def make_env() -> compiler_gym.envs.CompilerEnv:
 
 # create benchmarks to be used
 with make_env() as env:
-    # grab ~100 benchmarks for training from different datasets
-    cbench = list(env.datasets['cbench-v1'].benchmark_uris())
-    gh = list(env.datasets['github-v0'].benchmark_uris())
-    gh = random.sample(gh, 25)
-    linux = list(env.datasets['linux-v0'].benchmark_uris())
-    linux = random.sample(linux, 25)
-    blas = list(env.datasets['blas-v0'].benchmark_uris())
-    blas = random.sample(blas, 25)
-    # use cbench for testing
-    csmith = list(islice(env.datasets['generator://csmith-v0'].benchmark_uris(), 25))
-    train_benchmarks = cbench + gh + linux + blas
-    test_benchmarks = csmith
+    # grab ~1000 benchmarks for training from csmith dataset
+    csmith = list(islice(env.datasets['generator://csmith-v0'].benchmarks(), 1000))
+    train_benchmarks = csmith
 
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
     del args
@@ -70,18 +61,19 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 20
+config['num_workers'] = 39
 # prob with using gpu and torch in rllib...
-#config['num_gpus'] = 1
+config['num_gpus'] = 1
 # this splits a rollout into an episode fragment of size n
-config['rollout_fragment_length'] = 8
+config['rollout_fragment_length'] = 10
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 160
+config['train_batch_size'] = 390
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
 config['gamma'] = 0.995
-config['horizon'] = 100
+# make maximum episode length 60 time steps
+config['horizon'] = 60
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
 
@@ -91,9 +83,6 @@ config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
 #train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
 
 def train(stop_criteria, save_dir):
-
-
-
     """
     Train an RLlib PPO agent using tune until any of the configured stopping criteria is met.
     :param stop_criteria: Dict with stopping criteria.
@@ -130,7 +119,7 @@ def rollout(agent, env):
         obs, reward, done, info = env.step(action)
         episode_reward += reward
         
-  return episode_reward
+    return episode_reward
 
 def test(env):
     agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
@@ -142,9 +131,9 @@ def test(env):
 
 # start training
 if __name__ == "__main__":
-		eval_llvm_instcount_policy(test)
+    #eval_llvm_instcount_policy(test)
     #test_agent = load(agent_path)
-    #save_dir = './log_dir'
-    #agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
+    save_dir = './log_dir'
+    agent_path,anaysis_obj = train({"episodes_total":1000000}, save_dir)
     #test_agent = load(agent_path)
     #cumulative_reward = test(test_agent)
