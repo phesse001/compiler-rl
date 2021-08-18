@@ -39,14 +39,16 @@ class envWrapper(gym.Wrapper):
 
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="InstCountNorm", reward_space="IrInstructionCountOz"))
+    env = envWrapper(compiler_gym.make("llvm-v0", reward_space="IrInstructionCountOz"))
+    env.observation_space = "InstCountNorm"
     return env
+
 
 # create benchmarks to be used
 with make_env() as env:
     # grab ~1000 benchmarks for training from csmith dataset
-    csmith = list(islice(env.datasets['generator://csmith-v0'].benchmarks(), 1000))
-    cbench = env.datasets['benchmark://cbench-v1'].benchmarks()
+    #csmith = list(islice(env.datasets['generator://csmith-v0'].benchmarks(), 1000))
+    cbench = list(env.datasets['benchmark://cbench-v1'].benchmark_uris())
     train_benchmarks = cbench
 
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
