@@ -13,6 +13,7 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get -y install rsync && \
     apt-get -y install git && \
     apt-get -y install vim && \
+    apt-get -y install sudo && \
     apt-get -y install libglib2.0-0
 
 RUN python3.6 -m pip install gym && \
@@ -23,5 +24,8 @@ RUN python3.6 -m pip install gym && \
 RUN mkdir -p /compiler_gym
 
 RUN git clone --single-branch --branch leaderboard https://github.com/phesse001/compiler-rl.git compiler-rl
+
+RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
+USER docker
 
 WORKDIR /compiler-rl/ppo

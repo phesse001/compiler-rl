@@ -39,14 +39,15 @@ class envWrapper(gym.Wrapper):
 
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"))
+    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="InstCountNorm", reward_space="IrInstructionCountOz"))
     return env
 
 # create benchmarks to be used
 with make_env() as env:
     # grab ~1000 benchmarks for training from csmith dataset
     csmith = list(islice(env.datasets['generator://csmith-v0'].benchmarks(), 1000))
-    train_benchmarks = csmith
+    cbench = env.datasets['benchmark://cbench-v1'].benchmarks()
+    train_benchmarks = cbench
 
 def make_training_env(*args) -> compiler_gym.envs.CompilerEnv:
     del args
@@ -124,7 +125,7 @@ def rollout(agent, env):
 def test(env):
     agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
     test_agent = load(agent_path)
-    env.observation_space = "Autophase"
+    env.observation_space = "InstCountNorm"
     # wrap env so episode can terminate after n rewardless steps
     env = envWrapper(env)
     rollout(test_agent, env)
