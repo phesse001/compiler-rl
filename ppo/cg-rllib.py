@@ -10,6 +10,8 @@ import numpy as np
 import random
 import itertools
 from itertools import cycle, islice 
+from compiler_gym.leaderboard.llvm_instcount import eval_llvm_instcount_policy
+from compiler_gym.envs import LlvmEnv
 
 # code based off of example RLlib implementation of compiler_gym environment -> https://github.com/facebookresearch/CompilerGym/blob/development/examples/rllib.ipynb
 
@@ -117,32 +119,31 @@ def load(path):
     agent.restore(path)
     return agent
 
-def test(agent, n_episodes):
+def rollout(agent, env):
     """Test trained agent for a single episode. Return the episode reward"""
-    # instantiate env class
-    rewards = []
-    for ep in range(n_episodes):
-        with make_training_env() as env:
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = env.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, info = env.step(action)
+        episode_reward += reward
+        
+  return episode_reward
 
-            # run until episode ends
-            episode_reward = 0
-            done = False
-            obs = env.reset()
-            while not done:
-                action = agent.compute_action(obs)
-                obs, reward, done, info = env.step(action)
-                print(f"Action taken {action}, reward given {reward}")
-                episode_reward += reward
-                
-          rewards.append(episode_reward)
-
-     return rewards
+def test(env):
+    agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
+    test_agent = load(agent_path)
+    env.observation_space = "Autophase"
+    # wrap env so episode can terminate after n rewardless steps
+    env = envWrapper(env)
+    rollout(test_agent, env)
 
 # start training
 if __name__ == "__main__":
-    test_agent = load(agent_path)
-    cumulative_rewards = test(test_agent, 20)
-    print(cumulative_rewards)
+		eval_llvm_instcount_policy(test)
+    #test_agent = load(agent_path)
     #save_dir = './log_dir'
     #agent_path,anaysis_obj = train({"episodes_total":200000}, save_dir)
     #test_agent = load(agent_path)
