@@ -12,6 +12,7 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get -y install python3-pip && \
     apt-get -y install rsync && \
     apt-get -y install git && \
+    apt-get -y install vim && \
     apt-get -y install libglib2.0-0
 
 RUN python3.6 -m pip install gym && \
