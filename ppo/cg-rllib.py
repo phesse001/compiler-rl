@@ -19,7 +19,7 @@ from compiler_gym.envs import LlvmEnv
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
 # try making wrapper to use done logic
-class envWrapper(gym.Wrapper):
+class stepWrapper(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env = env
@@ -35,13 +35,31 @@ class envWrapper(gym.Wrapper):
 
         if self.reward_counter > self.patience:
             done = True
+        print(next_state)
         return next_state, reward, done, info
-
+  
+class ObservationWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+      super().__init__(env)
+    
+    def observation(self, obs):
+        # modify obs
+        obs = np.zeros(len(obs))
+        return obs
+    
+class RewardWrapper(gym.RewardWrapper):
+    def __init__(self, env):
+      super().__init__(env)
+    
+    def reward(self, rew):
+        # modify rew
+        return rew
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = envWrapper(compiler_gym.make("llvm-v0", reward_space="IrInstructionCountOz"))
-    env.observation_space = "InstCountNorm"
+    env = ObservationWrapper(compiler_gym.make("llvm-v0", observation_space="InstCount", reward_space="IrInstructionCountOz"))
+    env = stepWrapper(env)
     return env
+
 
 
 # create benchmarks to be used
@@ -64,13 +82,13 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 39
+config['num_workers'] = 7 
 # prob with using gpu and torch in rllib...
-config['num_gpus'] = 1
+config['num_gpus'] = 0
 # this splits a rollout into an episode fragment of size n
 config['rollout_fragment_length'] = 10
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 390
+config['train_batch_size'] = 70
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
@@ -79,9 +97,8 @@ config['gamma'] = 0.995
 config['horizon'] = 60
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
-
 config['model']['fcnet_activation'] = 'relu'
-config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
+config['model']['fcnet_hiddens'] = [512, 512] 
 
 #train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
 
@@ -125,7 +142,7 @@ def rollout(agent, env):
     return episode_reward
 
 def test(env):
-    agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
+    agent_path = "/compiler-rl/ppo/log_dir/PPO_2021-08-18_21-33-10/PPO_compiler_gym_e29fe_00000_0_2021-08-18_21-33-10/checkpoint_020494/checkpoint_020494"
     test_agent = load(agent_path)
     env.observation_space = "InstCountNorm"
     # wrap env so episode can terminate after n rewardless steps
@@ -134,9 +151,9 @@ def test(env):
 
 # start training
 if __name__ == "__main__":
-    #eval_llvm_instcount_policy(test)
+    eval_llvm_instcount_policy(test)
     #test_agent = load(agent_path)
-    save_dir = './log_dir'
-    agent_path,anaysis_obj = train({"episodes_total":1000000}, save_dir)
+    #save_dir = './log_dir'
+    #agent_path,anaysis_obj = train({"episodes_total":1000}, save_dir)
     #test_agent = load(agent_path)
     #cumulative_reward = test(test_agent)
