@@ -39,10 +39,8 @@ class envWrapper(gym.Wrapper):
 
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = envWrapper(compiler_gym.make("llvm-v0", reward_space="IrInstructionCountOz"))
-    env.observation_space = "InstCountNorm"
+    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="InstCount", reward_space="IrInstructionCountOz"))
     return env
-
 
 # create benchmarks to be used
 with make_env() as env:
@@ -127,7 +125,7 @@ def rollout(agent, env):
 def test(env):
     agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
     test_agent = load(agent_path)
-    env.observation_space = "InstCountNorm"
+    env.observation_space = "InstCount"
     # wrap env so episode can terminate after n rewardless steps
     env = envWrapper(env)
     rollout(test_agent, env)
