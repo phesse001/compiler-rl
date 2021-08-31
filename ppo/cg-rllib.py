@@ -19,15 +19,16 @@ from compiler_gym.envs import LlvmEnv
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
 # try making wrapper to use done logic
-class envWrapper(gym.Wrapper):
+class stepWrapper(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env = env
         self.patience = 10
         self.reward_counter = 0
+        self.actions_taken = []
 
     def step(self, action):
-        next_state, reward, done, info = self.env.step(action)
+        actions_taken.append(action) next_state, reward, done, info = self.env.step(action) 
         if reward <= 0:
             self.reward_counter += 1
         else:
@@ -35,11 +36,41 @@ class envWrapper(gym.Wrapper):
 
         if self.reward_counter > self.patience:
             done = True
-        return next_state, reward, done, info
 
+        return next_state, reward, done, info
+  
+
+class observationWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+    
+    def observation(self, obs):
+        # modify obs
+        obs = np.zeros(len(obs))
+        return obs
+
+class rewardWrapper(gym.RewardWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.env = env
+        # access attributes of parent class
+    def reward(self, rew):
+        # modify rew
+        # make reward penalized for staying the same (i.e choosing action with 0 reward over and over)
+        print(f'The reward is {rew}')
+        return rew
+
+class actionWrapper(gym.ActionWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def action(self, action):
+        # modify action
+        return action
 
 def make_env() -> compiler_gym.envs.CompilerEnv:
-    env = envWrapper(compiler_gym.make("llvm-v0", observation_space="InstCount", reward_space="IrInstructionCountOz"))
+    env = compiler_gym.make("llvm-v0", observation_space="InstCount", reward_space="IrInstructionCountOz")
+    env = stepWrapper(env)
     return env
 
 # create benchmarks to be used
@@ -65,7 +96,7 @@ config = ppo.DEFAULT_CONFIG.copy()
 config['num_workers'] = 39
 # prob with using gpu and torch in rllib...
 config['num_gpus'] = 1
-# this splits a rollout into an episode fragment of size n
+# this splits a rollout into an episode fragment of size n - make 10 cuz that is the min ep len
 config['rollout_fragment_length'] = 10
 # this will combine fragements into a batch to perform sgd
 config['train_batch_size'] = 390
@@ -77,9 +108,8 @@ config['gamma'] = 0.995
 config['horizon'] = 60
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
-
 config['model']['fcnet_activation'] = 'relu'
-config['model']['fcnet_hiddens'] = [1024, 1024, 1024]
+config['model']['fcnet_hiddens'] = [1024, 1024, 1024] 
 
 #train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
 
@@ -122,12 +152,11 @@ def rollout(agent, env):
         
     return episode_reward
 
-def test(env):
-    agent_path = "/compiler-rl/ppo/logs/PPO_2021-08-12_03-06-53/PPO_compiler_gym_58418_00000_0_2021-08-12_03-06-53/checkpoint_017833/checkpoint-17833"
+def test(env, agent_path):
     test_agent = load(agent_path)
     env.observation_space = "InstCount"
     # wrap env so episode can terminate after n rewardless steps
-    env = envWrapper(env)
+    env = stepWrapper(env)
     rollout(test_agent, env)
 
 # start training
@@ -135,6 +164,7 @@ if __name__ == "__main__":
     #eval_llvm_instcount_policy(test)
     #test_agent = load(agent_path)
     save_dir = './log_dir'
-    agent_path,anaysis_obj = train({"episodes_total":1000000}, save_dir)
-    #test_agent = load(agent_path)
+    agent_path, anaysis_obj = train({"episodes_total":1000000}, save_dir)
+    agent = load(agent_path)
+    eval_llvm_instcount_policy(test(agent_path=agent_path))
     #cumulative_reward = test(test_agent)
