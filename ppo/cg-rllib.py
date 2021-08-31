@@ -28,7 +28,7 @@ class stepWrapper(gym.Wrapper):
         self.actions_taken = []
 
     def step(self, action):
-        actions_taken.append(action) next_state, reward, done, info = self.env.step(action) 
+        next_state, reward, done, info = self.env.step(action)
         if reward <= 0:
             self.reward_counter += 1
         else:
@@ -46,7 +46,6 @@ class observationWrapper(gym.ObservationWrapper):
     
     def observation(self, obs):
         # modify obs
-        obs = np.zeros(len(obs))
         return obs
 
 class rewardWrapper(gym.RewardWrapper):
@@ -167,4 +166,4 @@ if __name__ == "__main__":
     agent_path, anaysis_obj = train({"episodes_total":1000000}, save_dir)
     agent = load(agent_path)
     eval_llvm_instcount_policy(test(agent_path=agent_path))
-    #cumulative_reward = test(test_agent)
+
