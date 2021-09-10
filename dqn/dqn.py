@@ -220,7 +220,9 @@ def save_observation(observation, observations):
 def train(agent, env):
     env.observation_space = "Autophase"
     print(env.observation_space)
-    train_benchmarks = env.datasets["benchmark://cbench-v1"]
+    test_benchmarks = env.datasets["benchmark://cbench-v1"]
+    train_benchmarks = list(islice(env.datasets['generator://csmith-v0'].benchmarks(), 1000))
+    print(train_benchmarks)
     history_size = 100
     mem_cntr = 0
     history = np.zeros(history_size)

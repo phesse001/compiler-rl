@@ -23,7 +23,7 @@ class stepWrapper(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env = env
-        self.patience = 10
+        self.patience = 5
         self.reward_counter = 0
         self.actions_taken = []
 
@@ -46,6 +46,7 @@ class observationWrapper(gym.ObservationWrapper):
     
     def observation(self, obs):
         # modify obs
+        print(obs)
         return obs
 
 class rewardWrapper(gym.RewardWrapper):
@@ -70,6 +71,7 @@ class actionWrapper(gym.ActionWrapper):
 def make_env() -> compiler_gym.envs.CompilerEnv:
     env = compiler_gym.make("llvm-v0", observation_space="InstCount", reward_space="IrInstructionCountOz")
     env = stepWrapper(env)
+    #env = observationWrapper(env)
     return env
 
 # create benchmarks to be used
@@ -92,13 +94,13 @@ ray.init(include_dashboard=True, ignore_reinit_error=True)
 config = ppo.DEFAULT_CONFIG.copy()
 
 # edit default config
-config['num_workers'] = 39
+config['num_workers'] = 8
 # prob with using gpu and torch in rllib...
-config['num_gpus'] = 1
+config['num_gpus'] = 0
 # this splits a rollout into an episode fragment of size n - make 10 cuz that is the min ep len
-config['rollout_fragment_length'] = 10
+config['rollout_fragment_length'] = 5
 # this will combine fragements into a batch to perform sgd
-config['train_batch_size'] = 390
+config['train_batch_size'] = 40
 # number of points to randomly select for GD
 config['sgd_minibatch_size'] = 20
 config['lr'] = 0.0001
@@ -108,7 +110,7 @@ config['horizon'] = 60
 config['framework'] = 'torch'
 config['env'] = 'compiler_gym'
 config['model']['fcnet_activation'] = 'relu'
-config['model']['fcnet_hiddens'] = [1024, 1024, 1024] 
+config['model']['fcnet_hiddens'] = [512, 512] 
 
 #train, load, and test functions from https://bleepcoder.com/ray/644594660/rllib-best-workflow-to-train-save-and-test-agent
 
