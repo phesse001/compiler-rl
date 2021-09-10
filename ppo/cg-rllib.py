@@ -12,7 +12,7 @@ import itertools
 from itertools import cycle, islice 
 from compiler_gym.leaderboard.llvm_instcount import eval_llvm_instcount_policy
 from compiler_gym.envs import LlvmEnv
-from compiler_gym.wrappers import CompilerEnvWrapper, ObservationWrapper, RewardWrapper
+from compiler_gym.wrappers import CompilerEnvWrapper, ObservationWrapper, RewardWrapper, ActionWrapper
 
 # code based off of example RLlib implementation of compiler_gym environment -> https://github.com/facebookresearch/CompilerGym/blob/development/examples/rllib.ipynb
 
