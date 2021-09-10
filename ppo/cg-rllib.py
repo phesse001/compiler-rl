@@ -12,6 +12,7 @@ import itertools
 from itertools import cycle, islice 
 from compiler_gym.leaderboard.llvm_instcount import eval_llvm_instcount_policy
 from compiler_gym.envs import LlvmEnv
+from compiler_gym.wrappers import CompilerEnvWrapper, ObservationWrapper, RewardWrapper
 
 # code based off of example RLlib implementation of compiler_gym environment -> https://github.com/facebookresearch/CompilerGym/blob/development/examples/rllib.ipynb
 
@@ -19,7 +20,7 @@ from compiler_gym.envs import LlvmEnv
 # [optional] use the compiler_gym.wrappers API to implement custom contraints
 
 # try making wrapper to use done logic
-class stepWrapper(gym.Wrapper):
+class stepWrapper(CompilerEnvWrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env = env
@@ -27,8 +28,8 @@ class stepWrapper(gym.Wrapper):
         self.reward_counter = 0
         self.actions_taken = []
 
-    def step(self, action):
-        next_state, reward, done, info = self.env.step(action)
+    def step(self, action, **kwargs):
+        next_state, reward, done, info = self.env.step(action, **kwargs)
         if reward <= 0:
             self.reward_counter += 1
         else:
@@ -38,9 +39,9 @@ class stepWrapper(gym.Wrapper):
             done = True
 
         return next_state, reward, done, info
-  
 
-class observationWrapper(gym.ObservationWrapper):
+
+class observationWrapper(ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
     
@@ -48,7 +49,7 @@ class observationWrapper(gym.ObservationWrapper):
         # modify obs
         return obs
 
-class rewardWrapper(gym.RewardWrapper):
+class rewardWrapper(RewardWrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env = env
@@ -59,7 +60,7 @@ class rewardWrapper(gym.RewardWrapper):
         print(f'The reward is {rew}')
         return rew
 
-class actionWrapper(gym.ActionWrapper):
+class actionWrapper(ActionWrapper):
     def __init__(self, env):
         super().__init__(env)
 
